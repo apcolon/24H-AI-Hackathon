@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import "../styles/App.css";
+import motusIcon from "../assets/motus_icon.png";
+import motusProfile from "../assets/motus_profile.png";
 import lecturesData from "../lectures.json";
 
 /**
@@ -238,8 +240,8 @@ const CourseTutorMVP = () => {
       <aside className={`w-72 flex flex-col border-r transition-colors duration-300 ${dark ? "border-white/10 bg-linear-to-b from-slate-900 to-slate-950" : "border-gray-200 bg-white"}`}>
         {/* Brand */}
         <div className="px-5 py-5 flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-linear-to-br from-indigo-500 to-violet-600 flex items-center justify-center text-lg font-bold text-white shadow-lg shadow-indigo-500/25">
-            M
+          <div className="w-9 h-9 rounded-xl bg-linear-to-br from-indigo-500 to-violet-600 flex items-center justify-center shadow-lg shadow-indigo-500/25 p-1">
+            <img src={motusIcon} alt="Motus" className="w-full h-full rounded-lg object-cover" />
           </div>
           <span className={`text-lg font-semibold tracking-tight ${dark ? "text-white" : "text-gray-900"}`}>Motus</span>
         </div>
@@ -411,13 +413,15 @@ const CourseTutorMVP = () => {
                   {/* Message row */}
                   <div className={`flex gap-3 py-3 ${isUser ? "flex-row-reverse" : ""}`}>
                     {/* Avatar */}
-                    <div className={`w-8 h-8 rounded-xl shrink-0 flex items-center justify-center text-xs font-bold text-white ${
-                      isUser
-                        ? "bg-linear-to-br from-blue-500 to-cyan-500"
-                        : "bg-linear-to-br from-indigo-500 to-violet-600"
-                    }`}>
-                      {isUser ? "Y" : "AI"}
-                    </div>
+                    {isUser ? (
+                      <div className="w-8 h-8 rounded-xl shrink-0 flex items-center justify-center text-xs font-bold text-white bg-linear-to-br from-blue-500 to-cyan-500">
+                        Y
+                      </div>
+                    ) : (
+                      <div className="w-8 h-8 rounded-xl bg-linear-to-br from-indigo-500 to-violet-600 flex items-center justify-center shrink-0 p-1">
+                        <img src={motusProfile} alt="Motus" className="w-full h-full rounded-lg object-cover" />
+                      </div>
+                    )}
 
                     {/* Bubble */}
                     <div className={`max-w-[75%] min-w-0 ${isUser ? "text-right" : ""}`}>
@@ -446,8 +450,8 @@ const CourseTutorMVP = () => {
             {/* Typing indicator */}
             {isLoading && (
               <div className="msg-animate flex gap-3 py-3">
-                <div className="w-8 h-8 rounded-xl bg-linear-to-br from-indigo-500 to-violet-600 text-white flex items-center justify-center text-xs font-bold shrink-0">
-                  AI
+                <div className="w-8 h-8 rounded-xl bg-linear-to-br from-indigo-500 to-violet-600 flex items-center justify-center shrink-0 p-1">
+                  <img src={motusProfile} alt="Motus" className="w-full h-full rounded-lg object-cover" />
                 </div>
                 <div className={`px-5 py-4 rounded-2xl rounded-tl-md flex items-center gap-1.5 ${dark ? "bg-white/7 border border-white/10 backdrop-blur-sm" : "bg-white border border-gray-200 shadow-sm"}`}>
                   <span className={`typing-dot w-2 h-2 rounded-full ${dark ? "bg-slate-400" : "bg-gray-400"}`} />
