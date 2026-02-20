@@ -3,6 +3,8 @@ import hashlib
 import secrets
 from flask import Flask, request, jsonify, make_response
 import psycopg
+from app.oracle_genai import create_session, get_reply
+from oci.exceptions import ServiceError
 
 app = Flask(__name__)
 
@@ -126,9 +128,6 @@ def send_message():
     resp = make_response()
     session_id = get_or_create_session(resp)
 
-    # Replace this later with real AI call
-    agent_reply = f"(stub) For {course}: {prompt}"
-
     with get_db() as conn:
         with conn.cursor() as cur:
             cur.execute("SELECT class_id FROM classes WHERE name = %s", (course,))
@@ -137,23 +136,36 @@ def send_message():
                 return jsonify({"error": "Unknown course"}), 400
             class_id = row[0]
 
+            # Get or create our DB chat, fetching any existing OCI session ID
             cur.execute(
                 """
                 INSERT INTO chats (session_id, class_id)
                 VALUES (%s, %s)
                 ON CONFLICT (session_id, class_id)
                 DO UPDATE SET session_id = EXCLUDED.session_id
-                RETURNING chat_id
+                RETURNING chat_id, oracle_session_id
                 """,
                 (session_id, class_id)
             )
-            chat_id = cur.fetchone()[0]
+            chat_id, oracle_session_id = cur.fetchone()
+
+            # Create a new OCI agent session if this is the first message
+            if oracle_session_id is None:
+                oracle_session_id = create_session(f"{course} - session {chat_id}")
+                cur.execute(
+                    "UPDATE chats SET oracle_session_id = %s WHERE chat_id = %s",
+                    (oracle_session_id, chat_id)
+                )
+
+            try:
+                agent_reply = get_reply(prompt, oracle_session_id)
+            except ServiceError as e:
+                agent_reply = f"Sorry, the AI agent could not process that request. ({e.message})"
 
             cur.execute(
                 "INSERT INTO messages (chat_id, sender, text) VALUES (%s, 'user', %s)",
                 (chat_id, prompt)
             )
-
             cur.execute(
                 "INSERT INTO messages (chat_id, sender, text) VALUES (%s, 'agent', %s)",
                 (chat_id, agent_reply)

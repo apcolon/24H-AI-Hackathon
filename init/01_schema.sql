@@ -11,10 +11,11 @@ CREATE TABLE classes (
 );
 
 CREATE TABLE chats (
-  chat_id     BIGSERIAL PRIMARY KEY,
-  session_id  BIGINT NOT NULL REFERENCES sessions(session_id) ON DELETE CASCADE,
-  class_id    BIGINT NOT NULL REFERENCES classes(class_id) ON DELETE CASCADE,
-  created_at  TIMESTAMPTZ DEFAULT now() NOT NULL,
+  chat_id            BIGSERIAL PRIMARY KEY,
+  session_id         BIGINT NOT NULL REFERENCES sessions(session_id) ON DELETE CASCADE,
+  class_id           BIGINT NOT NULL REFERENCES classes(class_id) ON DELETE CASCADE,
+  oracle_session_id  TEXT,
+  created_at         TIMESTAMPTZ DEFAULT now() NOT NULL,
   UNIQUE (session_id, class_id)  -- ensures ONE chat per class per session
 );
 

@@ -3,24 +3,21 @@ import React, { useState, useEffect, useRef } from 'react';
 const CourseTutorMVP = () => {
     // --- State Management ---
     const [classes, setClasses] = useState([]);
-    const [selectedCourse, setSelectedCourse] = useState('EECS 484');
+    const [selectedCourse, setSelectedCourse] = useState('');
     const [chatHistory, setChatHistory] = useState([]);
     const [inputMessage, setInputMessage] = useState('');
     const [isLoading, setIsLoading] = useState(false);
 
     const chatEndRef = useRef(null);
-    const uid = "user_123"; // Mock User ID
+    // --- API Calls ---
 
-    // --- API Mocks (Replace with actual fetch calls) ---
-
-    // 1. Get_classes
+    // 1. /api/get_classes
     useEffect(() => {
-        // Mocking the fetch to /api/get_classes
         const fetchClasses = async () => {
-            // const response = await fetch('/api/get_classes');
-            // const data = await response.json();
-            const mockData = { results: ["EECS 484", "STRAT 400", "BIO 101"] };
-            setClasses(mockData.results);
+            const response = await fetch('/api/get_classes', { credentials: 'include' });
+            const data = await response.json();
+            setClasses(data.classes);
+            if (data.classes.length > 0) setSelectedCourse(data.classes[0]);
         };
         fetchClasses();
     }, []);
@@ -29,15 +26,12 @@ const CourseTutorMVP = () => {
     useEffect(() => {
         const fetchHistory = async () => {
             if (!selectedCourse) return;
-            // const response = await fetch(`/api/chat_history?course=${selectedCourse}&uid=${uid}`);
-            // const data = await response.json();
-
-            const mockHistory = {
-                results: [
-                    { time: "2026-02-19T10:00:00", sender: "agent", text: `Welcome to the ${selectedCourse} AI Assistant. How can I help you study today?` }
-                ]
-            };
-            setChatHistory(mockHistory.results);
+            const response = await fetch(
+                `/api/chat_history?course=${encodeURIComponent(selectedCourse)}`,
+                { credentials: 'include' }
+            );
+            const data = await response.json();
+            setChatHistory(data.results);
         };
         fetchHistory();
     }, [selectedCourse]);
@@ -63,29 +57,22 @@ const CourseTutorMVP = () => {
         setIsLoading(true);
 
         try {
-            // Actual API Call would look like this:
-            /*
             const response = await fetch('/api/send_message', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ uid: uid, course: selectedCourse, prompt: newMessage.text })
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({ course: selectedCourse, prompt: newMessage.text }),
             });
             const data = await response.json();
-            */
-
-            // Mocking the AI's response delay
-            setTimeout(() => {
-                const agentResponse = {
-                    time: new Date().toISOString(),
-                    sender: "agent",
-                    text: "This is a synthesized response based strictly on your uploaded syllabus and lecture transcripts."
-                };
-                setChatHistory(prev => [...prev, agentResponse]);
-                setIsLoading(false);
-            }, 1500);
-
+            const agentResponse = {
+                time: new Date().toISOString(),
+                sender: 'agent',
+                text: data.reply,
+            };
+            setChatHistory(prev => [...prev, agentResponse]);
         } catch (error) {
-            console.error("Failed to send message:", error);
+            console.error('Failed to send message:', error);
+        } finally {
             setIsLoading(false);
         }
     };
@@ -102,7 +89,7 @@ const CourseTutorMVP = () => {
                 <div className="p-4 flex-grow overflow-y-auto">
                     <h2 className="text-sm text-gray-400 mb-3 uppercase tracking-wider">Your Classes</h2>
                     <ul>
-                        {(classes as string[]).map((courseName: string): JSX.Element => (
+                        {classes.map((courseName) => (
                             <li key={courseName} className="mb-2">
                                 <button
                                     onClick={() => setSelectedCourse(courseName)}
