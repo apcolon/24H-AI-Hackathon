@@ -43,12 +43,12 @@ const HomePage = () => {
 
         {/* Logo */}
         <div className="w-20 h-20 rounded-2xl bg-linear-to-br from-indigo-500 to-violet-600 flex items-center justify-center text-4xl font-bold text-white mb-6 shadow-2xl shadow-indigo-500/30">
-          C
+          M
         </div>
 
         {/* Title */}
         <h1 className={`text-4xl sm:text-5xl font-bold tracking-tight mb-3 ${dark ? "text-white" : "text-gray-900"}`}>
-          CourseTutor AI
+          Motus
         </h1>
         <p className={`text-lg mb-14 max-w-md text-center ${dark ? "text-slate-400" : "text-gray-500"}`}>
           Your AI-powered classroom assistant. Select your role to get started.
@@ -125,7 +125,7 @@ const HomePage = () => {
 
       {/* Footer */}
       <footer className={`py-6 text-center text-xs ${dark ? "text-slate-600" : "text-gray-400"}`}>
-        CourseTutor AI &mdash; 24H AI Hackathon
+        Motus &mdash; 24H AI Hackathon
       </footer>
     </div>
   );

@@ -34,7 +34,7 @@ def create_session(display_name: str) -> str:
         agent_endpoint_id=AGENT_ENDPOINT_ID,
         create_session_details=CreateSessionDetails(
             display_name=display_name,
-            description="Created by CourseTutor API",
+            description="Created by Motus API",
         ),
     )
     return resp.data.id
