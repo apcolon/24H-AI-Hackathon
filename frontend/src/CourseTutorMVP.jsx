@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import "../styles/App.css";
+import "./styles/App.css";
 
 /**
  * Render markdown-style links [text](url) as clickable <a> tags.
