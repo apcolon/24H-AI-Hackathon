@@ -1,9 +1,10 @@
+from __future__ import annotations
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
-from __future__ import annotations
+from fastapi import HTTPException
+import traceback
 from fastapi import Response
 import oci
 
@@ -96,5 +97,22 @@ def oci_tts_mp3(text: str) -> bytes:
 
 @app.post("/api/tts")
 def tts(req: TTSIn):
-    mp3 = oci_tts_mp3(req.text)
-    return Response(content=mp3, media_type="audio/mpeg")
+    try:
+        mp3 = oci_tts_mp3(req.text)
+        return Response(content=mp3, media_type="audio/mpeg")
+    except oci.exceptions.ServiceError as e:
+        # OCI service rejected the request (IAM, compartment/tenancy scope, region, etc.)
+        print("OCI ServiceError:", e)
+        raise HTTPException(
+            status_code=e.status if hasattr(e, "status") else 500,
+            detail={
+                "code": getattr(e, "code", None),
+                "message": str(e),
+                "opc_request_id": getattr(e, "opc_request_id", None),
+            },
+        )
+    except Exception as e:
+        # Anything else (bad config, missing file, etc.)
+        print("TTS unexpected error:", repr(e))
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))

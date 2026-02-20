@@ -45,7 +45,7 @@ const CourseTutorMVP = () => {
   const [isLoading, setIsLoading] = useState(false);
 
   const audioRef = useRef(null);
-  const [ttsEnabled, setTtsEnabled] = useState(false);
+  const [ttsEnabled, setTtsEnabled] = useState(true);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const chatEndRef = useRef(null);
 
@@ -107,6 +107,19 @@ const CourseTutorMVP = () => {
     setIsLoading(true);
 
     try {
+      // Check for test voice command
+      if (newMessage.text.toLowerCase().includes("test voice")) {
+        const testResponse = {
+          time: new Date().toISOString(),
+          sender: "agent",
+          text: "THIS IS A TEST FOR VOICE",
+        };
+        setChatHistory((prev) => [...prev, testResponse]);
+        speak(testResponse.text);
+        setIsLoading(false);
+        return;
+      }
+
       const response = await fetch("/api/send_message", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -140,10 +153,11 @@ const CourseTutorMVP = () => {
   };
 
   const speak = async (text) => {
+    console.log("SPEAK CALLED", { ttsEnabled, text });
     if (!ttsEnabled || !text?.trim()) return;
     try {
       setIsSpeaking(true);
-      const res = await fetch("/api/tts", {
+      const res = await fetch("http://127.0.0.1:8000/api/tts", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",

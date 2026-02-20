@@ -150,16 +150,16 @@ const CourseTutorMVP = () => {
         body: JSON.stringify({ text }),
       });
       if (!res.ok) throw new Error(`TTS failed: ${res.status}`);
-      const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
+        const blob = await res.blob();
+        const url = URL.createObjectURL(blob);
       if (!audioRef.current) audioRef.current = new Audio();
-      audioRef.current.pause();
-      audioRef.current.src = url;
-      audioRef.current.onended = () => setIsSpeaking(false);
+        audioRef.current.pause();
+        audioRef.current.src = url;
+        audioRef.current.onended = () => setIsSpeaking(false);
       await audioRef.current.play();
     } catch (e) {
-      console.error(e);
-      setIsSpeaking(false);
+        console.error(e);
+        setIsSpeaking(false);
     }
   };
 
