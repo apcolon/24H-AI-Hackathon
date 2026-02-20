@@ -1,11 +1,12 @@
 import os
 import configparser
+import json
 import oci
 from oci import generative_ai_agent_runtime
 from oci.generative_ai_agent_runtime.models import CreateSessionDetails, ChatDetails
 
 SERVICE_EP = "https://agent-runtime.generativeai.us-ashburn-1.oci.oraclecloud.com"
-AGENT_ENDPOINT_ID = "ocid1.genaiagentendpoint.oc1.iad.amaaaaaampxat2aav2cs2xnw6s42i5efbzfmrlyrb6oyeljwmce2blidv5bq"
+AGENT_ENDPOINT_ID = "ocid1.genaiagentendpoint.oc1.iad.amaaaaaampxat2aaxjz33hwfopkwsudqpudspkm5jubn6vtpi6mcbo6jnpya"
 
 
 def _load_config():
@@ -40,14 +41,31 @@ def create_session(display_name: str) -> str:
     return resp.data.id
 
 
-def get_reply(prompt: str, oracle_session_id: str) -> str:
-    """Send a message to the agent and return its reply text."""
+def get_reply(prompt: str, oracle_session_id: str, course_id: str = "eecon409") -> str:
+    """Send a message to the agent and return its reply text.
+
+    Filters the knowledge-base retrieval so only documents whose
+    ``course`` metadata field matches *course_id* are considered.
+    """
     resp = client.chat(
         agent_endpoint_id=AGENT_ENDPOINT_ID,
         chat_details=ChatDetails(
             user_message=prompt,
             session_id=oracle_session_id,
             should_stream=False,
+            tool_parameters={
+                "rag": json.dumps({
+                    "filterConditions": [
+                        {
+                            "field": "course",
+                            "field_type": "string",
+                            "operation": "contains",
+                            "value": course_id
+                            
+                        }
+                    ]
+                })
+            }
         ),
     )
     return resp.data.message.content.text

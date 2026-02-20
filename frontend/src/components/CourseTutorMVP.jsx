@@ -11,16 +11,36 @@ function renderMessageText(text, dark) {
   let match;
   while ((match = linkRe.exec(text)) !== null) {
     if (match.index > last) parts.push(text.slice(last, match.index));
+    const isLecture = match[2].includes("leccap");
     parts.push(
-      <a
-        key={match.index}
-        href={match[2]}
-        target="_blank"
-        rel="noopener noreferrer"
-        className={`underline transition-colors ${dark ? "text-indigo-300 hover:text-indigo-100" : "text-indigo-600 hover:text-indigo-800"}`}
-      >
-        {match[1]}
-      </a>,
+      isLecture ? (
+        <a
+          key={match.index}
+          href={match[2]}
+          target="_blank"
+          rel="noopener noreferrer"
+          className={`inline-flex items-center gap-2 px-3 py-1.5 my-1 rounded-lg text-sm font-medium transition-all shadow-sm ${
+            dark
+              ? "bg-indigo-500/20 text-indigo-300 hover:bg-indigo-500/30 border border-indigo-500/30"
+              : "bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border border-indigo-200"
+          }`}
+        >
+          <svg className="w-4 h-4 shrink-0" fill="currentColor" viewBox="0 0 20 20">
+            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clipRule="evenodd" />
+          </svg>
+          {match[1]}
+        </a>
+      ) : (
+        <a
+          key={match.index}
+          href={match[2]}
+          target="_blank"
+          rel="noopener noreferrer"
+          className={`underline transition-colors ${dark ? "text-indigo-300 hover:text-indigo-100" : "text-indigo-600 hover:text-indigo-800"}`}
+        >
+          {match[1]}
+        </a>
+      ),
     );
     last = linkRe.lastIndex;
   }

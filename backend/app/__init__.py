@@ -26,7 +26,9 @@ def linkify_timestamps(text: str) -> str:
         code = m.group(1).strip()
         date = m.group(2).strip()
         timestamp = m.group(3).strip()
-        return f"[Lecture {date} @ {timestamp}]({LECCAP_BASE}/{code})"
+        parts = timestamp.split(":")
+        seconds = int(parts[0]) * 60 + int(parts[1])
+        return f"[{timestamp}]({LECCAP_BASE}{code}?start={seconds})"
     return TIMESTAMP_RE.sub(_replace, text)
 
 def get_db():
@@ -177,7 +179,7 @@ def send_message():
                 )
 
             try:
-                agent_reply = get_reply(prompt + " Additionally, when referencing a timestamp, always do so in the format <id, date, time>.", oracle_session_id)
+                agent_reply = get_reply(prompt + " Additionally, when referencing a timestamp, always do so in the format <id, date, time>.", oracle_session_id, course)
                 timestamps = extract_timestamps(agent_reply)
                 agent_reply = linkify_timestamps(agent_reply)
             except ServiceError as e:

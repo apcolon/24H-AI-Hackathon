@@ -36,7 +36,7 @@ CREATE TABLE recording_hits (
   message_id    BIGINT NOT NULL REFERENCES messages(message_id) ON DELETE CASCADE,
   class_id      BIGINT NOT NULL REFERENCES classes(class_id) ON DELETE CASCADE,
   rec_date      DATE NOT NULL,        -- lecture date
-  rec_time      TIME NOT NULL,        -- timestamp within the recording
+  rec_time      TEXT NOT NULL,        -- timestamp within the recording (MM:SS offset)
   created_at    TIMESTAMPTZ DEFAULT now() NOT NULL
 );
 
