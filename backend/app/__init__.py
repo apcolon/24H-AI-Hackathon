@@ -2,15 +2,19 @@ import os
 import re
 import hashlib
 import secrets
-from flask import Flask, request, jsonify, make_response
+from flask import Flask, request, jsonify, make_response, send_file
 import psycopg
 from app.oracle_genai import create_session, get_reply
 from oci.exceptions import ServiceError
+import oci
+from io import BytesIO
 
 app = Flask(__name__)
 
 DATABASE_URL = os.environ.get("DATABASE_URL")
 LECCAP_BASE = "https://leccap.engin.umich.edu/leccap/player/r/"
+
+_HENRY_VOICE_ID: str | None = None
 
 # Regex shared by linkify and timestamp extraction
 TIMESTAMP_RE = re.compile(r"<([A-Za-z0-9]+),\s*([0-9]+-[0-9]+-[0-9]+),\s*([0-9]+:[0-9]+)>")
@@ -211,3 +215,97 @@ def send_message():
     resp.set_data(jsonify({"reply": agent_reply}).get_data())
     resp.mimetype = "application/json"
     return resp
+
+
+def oci_tts_mp3(text: str) -> bytes:
+    """Generate MP3 audio from text using OCI TTS with Henry voice."""
+    global _HENRY_VOICE_ID
+
+    config = oci.config.from_file(profile_name="DEFAULT")
+    scope_ocid = config.get("compartment_id") or config.get("tenancy")
+    if not scope_ocid:
+        raise ValueError("Missing tenancy in ~/.oci/config [DEFAULT].")
+
+    client = oci.ai_speech.AIServiceSpeechClient(config)
+
+    language_code = "en-US"
+    model_name = "TTS_2_NATURAL"
+    sample_rate_in_hz = 24000
+
+    # Resolve Henry voice ID once and cache it
+    if _HENRY_VOICE_ID is None:
+        voices_resp = client.list_voices(
+            compartment_id=scope_ocid,
+            language_code=language_code,
+            model_name=model_name,
+            display_name="Henry",
+        )
+        voices = getattr(voices_resp.data, "items", None) or []
+        if not voices:
+            raise RuntimeError("Henry voice not found for TTS_2_NATURAL model.")
+        _HENRY_VOICE_ID = voices[0].voice_id
+
+    model_details = oci.ai_speech.models.TtsOracleTts2NaturalModelDetails(
+        model_name=model_name,
+        voice_id=_HENRY_VOICE_ID,
+        language_code=language_code,
+    )
+
+    synth_details = oci.ai_speech.models.SynthesizeSpeechDetails(
+        text=text,
+        is_stream_enabled=False,
+        compartment_id=scope_ocid,
+        configuration=oci.ai_speech.models.TtsOracleConfiguration(
+            model_family="ORACLE",
+            model_details=model_details,
+            speech_settings=oci.ai_speech.models.TtsOracleSpeechSettings(
+                text_type="TEXT",
+                output_format="MP3",
+                sample_rate_in_hz=sample_rate_in_hz,
+            ),
+        ),
+        audio_config=oci.ai_speech.models.TtsBaseAudioConfig(
+            config_type="BASE_AUDIO_CONFIG",
+        ),
+    )
+
+    resp = client.synthesize_speech(synthesize_speech_details=synth_details)
+
+    stream = resp.data
+    out = bytearray()
+
+    if hasattr(stream, "raw") and hasattr(stream.raw, "stream"):
+        for chunk in stream.raw.stream(1024 * 1024, decode_content=False):
+            if chunk:
+                out.extend(chunk)
+    elif hasattr(stream, "read"):
+        while True:
+            chunk = stream.read(1024 * 1024)
+            if not chunk:
+                break
+            out.extend(chunk)
+    else:
+        out.extend(bytes(stream))
+
+    return bytes(out)
+
+
+@app.route("/api/tts", methods=["POST"])
+def tts():
+    data = request.json
+    if not data or "text" not in data:
+        return jsonify({"error": "Body must include {text}"}), 400
+
+    text = data["text"].strip()
+    if not text:
+        return jsonify({"error": "text cannot be empty"}), 400
+
+    try:
+        mp3_bytes = oci_tts_mp3(text)
+        return send_file(
+            BytesIO(mp3_bytes),
+            mimetype="audio/mpeg",
+            as_attachment=False
+        )
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
