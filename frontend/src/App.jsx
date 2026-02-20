@@ -1,9 +1,7 @@
-import CourseTutorMVP from './CourseTutorMVP';
+import CourseTutorMVP from "./components/CourseTutorMVP";
 
 function App() {
-  return (
-    <CourseTutorMVP />
-  )
+  return <CourseTutorMVP />;
 }
 
 export default App;
