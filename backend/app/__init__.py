@@ -419,3 +419,68 @@ def generate_podcast():
     except Exception as e:
         print(f"Podcast generation error: {e}")
         return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/professor/heatmap", methods=["GET"])
+def professor_heatmap():
+    """Return per-lecture heatmap data for a course.
+
+    Each lecture date becomes a row.  The `counts` array holds the number of
+    student questions that referenced a timestamp falling inside each
+    consecutive 5-minute bucket (0-4:59, 5-9:59, …).  The frontend renders
+    these as coloured cells (green → red).
+    """
+    course = request.args.get("course")
+    if not course:
+        return jsonify({"error": "Missing ?course="}), 400
+
+    with get_db() as conn:
+        with conn.cursor() as cur:
+            cur.execute("SELECT class_id FROM classes WHERE name = %s", (course,))
+            row = cur.fetchone()
+            if not row:
+                return jsonify({"lectures": []})
+            class_id = row[0]
+
+            # Pull every hit for this class, ordered by lecture date
+            cur.execute(
+                """
+                SELECT rec_date, rec_time
+                FROM   recording_hits
+                WHERE  class_id = %s
+                ORDER  BY rec_date, rec_time
+                """,
+                (class_id,),
+            )
+            rows = cur.fetchall()
+
+    # Group hits by lecture date and bucket into 5-min chunks
+    from collections import defaultdict
+    date_hits = defaultdict(list)  # date -> [total_seconds, …]
+    for rec_date, rec_time in rows:
+        # rec_time is stored as "MM:SS"
+        parts = rec_time.split(":")
+        try:
+            total_seconds = int(parts[0]) * 60 + int(parts[1])
+        except (ValueError, IndexError):
+            total_seconds = 0
+        date_hits[rec_date].append(total_seconds)
+
+    CHUNK = 300  # 5 minutes in seconds
+
+    lectures = []
+    for idx, (rec_date, seconds_list) in enumerate(sorted(date_hits.items()), start=1):
+        max_sec = max(seconds_list) if seconds_list else 0
+        n_chunks = max(max_sec // CHUNK + 1, 1)
+        counts = [0] * n_chunks
+        for s in seconds_list:
+            bucket = min(s // CHUNK, n_chunks - 1)
+            counts[bucket] += 1
+        lectures.append({
+            "id": idx,
+            "date": str(rec_date),
+            "duration_minutes": n_chunks * 5,
+            "counts": counts,
+        })
+
+    return jsonify({"lectures": lectures})

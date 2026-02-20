@@ -26,6 +26,7 @@ services:
       # IMPORTANT: use db hostname, not localhost
       DATABASE_URL: postgresql://tutor:tutor_pw@db:5432/tutor
       FLASK_ENV: development
+      PGPASSWORD: tutor_pw
     ports:
       - "4000:4000"
     depends_on:
@@ -34,9 +35,21 @@ services:
     volumes:
       # mount code for quick iteration
       - ./backend:/app
+      - ./init:/docker-entrypoint-initdb.d:ro
       # mount OCI credentials from host
       - ~/.oci:/root/.oci:ro
-    command: python run.py
+    entrypoint: ["sh", "/app/entrypoint.sh"]
+    command: ["python", "run.py"]
+
+  frontend:
+    build: ./frontend
+    container_name: tutor-frontend
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    depends_on:
+      - api
+    volumes: []
 
 volumes:
   tutor_pgdata:

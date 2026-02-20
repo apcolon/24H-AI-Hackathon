@@ -19,25 +19,77 @@ const ProfessorPage = () => {
   ]);
 
   const [topics, setTopics] = useState([]);
+  const [courses, setCourses] = useState([]);
+  const [selectedCourse, setSelectedCourse] = useState("");
+  const [lectures, setLectures] = useState([]);
 
   useEffect(() => {
     localStorage.setItem("theme", dark ? "dark" : "light");
   }, [dark]);
 
-  // TODO: Add useEffect here to fetch metrics and topics from DB
-  // Example:
-  // useEffect(() => {
-  //   const fetchData = async () => {
-  //     const metricsRes = await fetch('/api/professor/metrics');
-  //     const metricsData = await metricsRes.json();
-  //     setMetrics(metricsData);
-  //
-  //     const topicsRes = await fetch('/api/professor/topics');
-  //     const topicsData = await topicsRes.json();
-  //     setTopics(topicsData);
-  //   };
-  //   fetchData();
-  // }, []);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      const metricsRes = await fetch('/api/professor/metrics');
+      const metricsData = await metricsRes.json();
+      setMetrics(metricsData);
+  
+      const topicsRes = await fetch('/api/professor/topics');
+      const topicsData = await topicsRes.json();
+      setTopics(topicsData);
+    };
+    fetchData();
+  }, []);
+
+  // Fetch available courses for dropdown
+  useEffect(() => {
+    const loadCourses = async () => {
+      try {
+        const res = await fetch('/api/get_classes');
+        const data = await res.json();
+        const list = (data.classes || []).map((c) => ({ label: c, value: c }));
+        setCourses(list);
+        if (list.length > 0 && !selectedCourse) setSelectedCourse(list[0].value);
+      } catch (e) {
+        console.error('Failed to load courses', e);
+        setCourses([]);
+      }
+    };
+    loadCourses();
+  }, []);
+
+  // Fetch lectures heatmap for selected course
+  useEffect(() => {
+    if (!selectedCourse) return;
+    const loadHeatmap = async () => {
+      try {
+        const res = await fetch(`/api/professor/heatmap?course=${encodeURIComponent(selectedCourse)}`);
+        if (!res.ok) throw new Error('no heatmap endpoint');
+        const data = await res.json();
+        setLectures(data.lectures || []);
+      } catch (e) {
+        console.error('Failed to load heatmap', e);
+        setLectures([]);
+      }
+    };
+    loadHeatmap();
+  }, [selectedCourse]);
+
+  // color map: value(0..max) -> css color string (green->red)
+  const colorFor = (value, max) => {
+    if (max <= 0) return '#0f9';
+    const ratio = Math.min(1, value / max);
+    // hue from 120 (green) -> 0 (red)
+    const hue = 120 - 120 * ratio;
+    return `hsl(${hue}deg 80% ${40 + 20 * (1 - ratio)}%)`;
+  };
+
+  const formatChunkLabel = (idx) => {
+    const minutes = idx * 5;
+    const h = Math.floor(minutes / 60);
+    const m = minutes % 60;
+    return `${h}:${m.toString().padStart(2, '0')}`;
+  };
 
   return (
     <div className={`min-h-screen transition-colors duration-300 font-[Inter,system-ui,sans-serif] ${dark ? "bg-slate-950" : "bg-gray-50"}`}>
@@ -105,6 +157,69 @@ const ProfessorPage = () => {
           <p className={`text-sm mb-6 ${dark ? "text-slate-400" : "text-gray-600"}`}>
             Topics students are asking about most frequently
           </p>
+
+          {/* Professor Heatmap Controls */}
+          <div className="mb-6 flex items-center gap-4">
+            <label className={`text-sm ${dark ? "text-slate-400" : "text-gray-600"}`}>Select course:</label>
+            <select
+              value={selectedCourse}
+              onChange={(e) => setSelectedCourse(e.target.value)}
+              className={`px-3 py-2 rounded-md border ${dark ? "bg-slate-900 border-white/10 text-white" : "bg-white border-gray-200 text-gray-900"}`}
+            >
+              {courses.map((c) => (
+                <option key={c.value} value={c.value}>{c.label}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Heatmap List */}
+          <div className="space-y-4">
+            {lectures.length === 0 ? (
+              <div className={`p-6 rounded-xl border ${dark ? "bg-slate-900/50 border-white/10" : "bg-white border-gray-200"}`}>
+                <p className={`${dark ? "text-slate-400" : "text-gray-600"}`}>No lectures found for this course.</p>
+              </div>
+            ) : (
+              lectures.map((lec) => {
+                const chunks = lec.counts || [];
+                const max = Math.max(...chunks, 1);
+                return (
+                  <div key={lec.id} className={`p-4 rounded-xl border ${dark ? "bg-slate-900/50 border-white/10" : "bg-white border-gray-200"}`}>
+                    <div className="flex items-center justify-between mb-2">
+                      <div>
+                        <h3 className={`${dark ? "text-white" : "text-gray-900"} font-semibold`}>Lecture — {lec.date}</h3>
+                        <p className={`text-sm ${dark ? "text-slate-400" : "text-gray-600"}`}>{lec.duration_minutes} minutes</p>
+                      </div>
+                      <div className={`text-sm ${dark ? "text-slate-400" : "text-gray-600"}`}>{chunks.reduce((a,b)=>a+b,0)} questions</div>
+                    </div>
+
+                    {/* heatmap bar */}
+                    <div className="w-full h-10 rounded-lg overflow-hidden border" style={{ borderColor: dark ? 'rgba(255,255,255,0.06)' : '#e5e7eb' }}>
+                      <div className="flex h-full">
+                        {chunks.map((count, idx) => (
+                          <div
+                            key={idx}
+                            title={`${formatChunkLabel(idx)} — ${count} question${count!==1? 's':''}`}
+                            style={{
+                              background: colorFor(count, max),
+                              width: `${100 / chunks.length}%`,
+                              transition: 'background-color 200ms',
+                            }}
+                          />
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* optional legend */}
+                    <div className="flex items-center gap-2 mt-3 text-xs">
+                      <div className="flex-1 text-sm text-gray-500">Low</div>
+                      <div className="flex-1 h-2 rounded bg-gradient-to-r from-green-400 to-red-500" />
+                      <div className="flex-1 text-right text-sm text-gray-500">High</div>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
 
           {/* Topics */}
           <div className="space-y-4">
