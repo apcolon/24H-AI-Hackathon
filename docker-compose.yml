@@ -34,7 +34,7 @@ services:
     volumes:
       # mount code for quick iteration
       - ./backend:/app
-    command: python app.py
+    command: python run.py
 
 volumes:
   tutor_pgdata:
