@@ -185,9 +185,9 @@ const CourseTutorMVP = () => {
         {/* Brand */}
         <div className="px-5 py-5 flex items-center gap-3">
           <div className="w-9 h-9 rounded-xl bg-linear-to-br from-indigo-500 to-violet-600 flex items-center justify-center text-lg font-bold text-white shadow-lg shadow-indigo-500/25">
-            C
+            M
           </div>
-          <span className={`text-lg font-semibold tracking-tight ${dark ? "text-white" : "text-gray-900"}`}>CourseTutor AI</span>
+          <span className={`text-lg font-semibold tracking-tight ${dark ? "text-white" : "text-gray-900"}`}>Motus</span>
         </div>
 
         {/* New Chat button */}
@@ -328,7 +328,7 @@ const CourseTutorMVP = () => {
             {chatHistory.length === 0 && !isLoading && (
               <div className="flex flex-col items-center justify-center h-full min-h-[50vh] text-center">
                 <div className="w-16 h-16 rounded-2xl bg-linear-to-br from-indigo-500 to-violet-600 flex items-center justify-center text-2xl text-white mb-5 shadow-xl shadow-indigo-500/20">
-                  C
+                  M
                 </div>
                 <h2 className={`text-xl font-semibold mb-2 ${dark ? "text-white" : "text-gray-900"}`}>
                   How can I help you today?
@@ -408,7 +408,7 @@ const CourseTutorMVP = () => {
                 type="text"
                 value={inputMessage}
                 onChange={(e) => setInputMessage(e.target.value)}
-                placeholder={`Message CourseTutor about ${selectedCourse}...`}
+                placeholder={`Message Motus about ${selectedCourse}...`}
                 className={`flex-1 bg-transparent text-sm focus:outline-none min-w-0 ${dark ? "text-white placeholder:text-slate-500" : "text-gray-900 placeholder:text-gray-400"}`}
                 disabled={isLoading}
               />
@@ -423,7 +423,7 @@ const CourseTutorMVP = () => {
               </button>
             </div>
             <p className={`text-[10px] text-center mt-2 ${dark ? "text-slate-600" : "text-gray-400"}`}>
-              CourseTutor can make mistakes. Verify important info with your course materials.
+              Motus can make mistakes. Verify important info with your course materials.
             </p>
           </form>
         </div>
