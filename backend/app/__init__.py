@@ -4,7 +4,7 @@ import hashlib
 import secrets
 from flask import Flask, request, jsonify, make_response, send_file
 import psycopg
-from app.oracle_genai import create_session, get_reply
+from app.oracle_genai import create_session, get_reply, generate_podcast as generate_podcast_ai
 from oci.exceptions import ServiceError
 import oci
 from io import BytesIO
@@ -308,4 +308,72 @@ def tts():
             as_attachment=False
         )
     except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/generate_podcast", methods=["POST"])
+def generate_podcast():
+    """Generate a podcast summary for a specific lecture recording."""
+    data = request.json
+    if not data or "course" not in data or "recording_id" not in data:
+        return jsonify({"error": "Body must include {course, recording_id}"}), 400
+
+    course = data["course"].strip()
+    recording_id = data["recording_id"].strip()
+
+    if not course or not recording_id:
+        return jsonify({"error": "course and recording_id cannot be empty"}), 400
+
+    resp = make_response()
+    session_id = get_or_create_session(resp)
+
+    try:
+        with get_db() as conn:
+            with conn.cursor() as cur:
+                cur.execute("SELECT class_id FROM classes WHERE name = %s", (course,))
+                row = cur.fetchone()
+                if not row:
+                    return jsonify({"error": "Unknown course"}), 400
+                class_id = row[0]
+
+                # Get or create our DB chat, fetching any existing OCI session ID
+                cur.execute(
+                    """
+                    INSERT INTO chats (session_id, class_id)
+                    VALUES (%s, %s)
+                    ON CONFLICT (session_id, class_id)
+                    DO UPDATE SET session_id = EXCLUDED.session_id
+                    RETURNING chat_id, oracle_session_id
+                    """,
+                    (session_id, class_id)
+                )
+                chat_id, oracle_session_id = cur.fetchone()
+
+                # Create a new OCI agent session if this is the first message
+                if oracle_session_id is None:
+                    oracle_session_id = create_session(f"{course} - podcast {chat_id}")
+                    cur.execute(
+                        "UPDATE chats SET oracle_session_id = %s WHERE chat_id = %s",
+                        (oracle_session_id, chat_id)
+                    )
+
+        # Create a podcast generation prompt
+        podcast_prompt = f"Generate a short podcast summary (2-3 minutes of narration) based on the lecture recording {recording_id} from {course}. Focus on the main concepts and key takeaways. Make it engaging and conversational."
+
+        # Call generate_podcast_ai to generate the podcast content filtered by recording_id
+        try:
+            podcast_text = generate_podcast_ai(podcast_prompt, oracle_session_id, recording_id)
+        except ServiceError as e:
+            podcast_text = f"Sorry, the podcast generator could not process that request. {e.message}"
+
+        # Convert the podcast text to speech
+        mp3_bytes = oci_tts_mp3(podcast_text)
+
+        return send_file(
+            BytesIO(mp3_bytes),
+            mimetype="audio/mpeg",
+            as_attachment=False
+        )
+    except Exception as e:
+        print(f"Podcast generation error: {e}")
         return jsonify({"error": str(e)}), 500

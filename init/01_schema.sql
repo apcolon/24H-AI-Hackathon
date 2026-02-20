@@ -45,3 +45,11 @@ ON recording_hits(class_id, rec_date, rec_time);
 
 CREATE INDEX idx_recording_hits_popularity
 ON recording_hits(class_id, rec_date);
+
+-- Insert default courses
+INSERT INTO classes (name) VALUES
+  ('econ409'),
+  ('eecs388'),
+  ('eecs484'),
+  ('phil183')
+ON CONFLICT (name) DO NOTHING;
