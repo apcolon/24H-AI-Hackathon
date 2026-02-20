@@ -1,4 +1,5 @@
 import os
+import re
 import hashlib
 import secrets
 from flask import Flask, request, jsonify, make_response
@@ -9,6 +10,16 @@ from oci.exceptions import ServiceError
 app = Flask(__name__)
 
 DATABASE_URL = os.environ.get("DATABASE_URL")
+LECCAP_BASE = "https://leccap.engin.umich.edu/leccap/player/r/"
+
+def linkify_timestamps(text: str) -> str:
+    """Replace <CODE, DATE, MM:SS> stubs with markdown links to lecture recordings."""
+    def _replace(m):
+        code = m.group(1).strip()
+        date = m.group(2).strip()
+        timestamp = m.group(3).strip()
+        return f"[Lecture {date} @ {timestamp}]({LECCAP_BASE}/{code})"
+    return re.sub(r"<([A-Za-z0-9]+),\s*([0-9]+-[0-9]+-[0-9]+),\s*([0-9]+:[0-9]+)>", _replace, text)
 
 def get_db():
     return psycopg.connect(DATABASE_URL)
@@ -158,7 +169,8 @@ def send_message():
                 )
 
             try:
-                agent_reply = get_reply(prompt, oracle_session_id)
+                agent_reply = get_reply(prompt + " Additionally, when referencing a timestamp, always do so in the format <id, date, time>.", oracle_session_id)
+                agent_reply = linkify_timestamps(agent_reply)
             except ServiceError as e:
                 agent_reply = f"Sorry, the AI agent could not process that request. ({e.message})"
 

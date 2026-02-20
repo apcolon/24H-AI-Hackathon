@@ -1,5 +1,28 @@
 import React, { useState, useEffect, useRef } from 'react';
 
+/**
+ * Render markdown-style links [text](url) as clickable <a> tags.
+ * Plain text is returned as-is.
+ */
+function renderMessageText(text) {
+    const parts = [];
+    const linkRe = /\[([^\]]+)\]\(([^)]+)\)/g;
+    let last = 0;
+    let match;
+    while ((match = linkRe.exec(text)) !== null) {
+        if (match.index > last) parts.push(text.slice(last, match.index));
+        parts.push(
+            <a key={match.index} href={match[2]} target="_blank" rel="noopener noreferrer"
+               className="underline text-blue-300 hover:text-blue-100">
+                {match[1]}
+            </a>
+        );
+        last = linkRe.lastIndex;
+    }
+    if (last < text.length) parts.push(text.slice(last));
+    return parts;
+}
+
 const CourseTutorMVP = () => {
     // --- State Management ---
     const [classes, setClasses] = useState([]);
@@ -119,7 +142,7 @@ const CourseTutorMVP = () => {
                     {chatHistory.map((msg, index) => (
                         <div key={index} className={`mb-4 flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
                             <div className={`max-w-[70%] rounded-lg p-4 shadow-sm ${msg.sender === 'user' ? 'bg-blue-600 text-white rounded-br-none' : 'bg-white text-gray-800 border border-gray-200 rounded-bl-none'}`}>
-                                <p className="text-sm">{msg.text}</p>
+                                <p className="text-sm">{msg.sender === 'agent' ? renderMessageText(msg.text) : msg.text}</p>
                             </div>
                         </div>
                     ))}
