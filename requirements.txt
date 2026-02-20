@@ -1,0 +1,19 @@
+# ---- Web API (student chat + summarize endpoints) ----
+fastapi==0.115.8
+uvicorn[standard]==0.34.0
+
+# ---- Oracle Cloud (GenAI + Speech/TTS) ----
+oci==2.129.0
+
+# ---- HTTP + config ----
+requests==2.32.3
+python-dotenv==1.0.1
+
+# ---- Optional but very useful ----
+httpx==0.27.2          # nicer async HTTP if you need it
+aiofiles==24.1.0       # if you stream or write audio files
+pydantic==2.10.6       # FastAPI uses pydantic; explicit pin helps
+
+# ---- If you end up returning/handling audio in-memory ----
+soundfile==0.12.1      # optional: read/write wav (only if you need)
+numpy==2.2.3           # optional dependency for audio processing (only if needed)
