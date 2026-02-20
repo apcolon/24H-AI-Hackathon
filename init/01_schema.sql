@@ -29,3 +29,19 @@ CREATE TABLE messages (
 
 CREATE INDEX idx_messages_chat_time 
 ON messages(chat_id, created_at);
+
+-- Tracks which lecture recording timestamps students ask about
+CREATE TABLE recording_hits (
+  hit_id        BIGSERIAL PRIMARY KEY,
+  message_id    BIGINT NOT NULL REFERENCES messages(message_id) ON DELETE CASCADE,
+  class_id      BIGINT NOT NULL REFERENCES classes(class_id) ON DELETE CASCADE,
+  rec_date      DATE NOT NULL,        -- lecture date
+  rec_time      TIME NOT NULL,        -- timestamp within the recording
+  created_at    TIMESTAMPTZ DEFAULT now() NOT NULL
+);
+
+CREATE INDEX idx_recording_hits_class
+ON recording_hits(class_id, rec_date, rec_time);
+
+CREATE INDEX idx_recording_hits_popularity
+ON recording_hits(class_id, rec_date);

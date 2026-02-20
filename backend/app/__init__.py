@@ -12,6 +12,14 @@ app = Flask(__name__)
 DATABASE_URL = os.environ.get("DATABASE_URL")
 LECCAP_BASE = "https://leccap.engin.umich.edu/leccap/player/r/"
 
+# Regex shared by linkify and timestamp extraction
+TIMESTAMP_RE = re.compile(r"<([A-Za-z0-9]+),\s*([0-9]+-[0-9]+-[0-9]+),\s*([0-9]+:[0-9]+)>")
+
+def extract_timestamps(text: str):
+    """Return list of (recording_id, date_str, time_str) from raw agent text."""
+    return [(m.group(1).strip(), m.group(2).strip(), m.group(3).strip())
+            for m in TIMESTAMP_RE.finditer(text)]
+
 def linkify_timestamps(text: str) -> str:
     """Replace <CODE, DATE, MM:SS> stubs with markdown links to lecture recordings."""
     def _replace(m):
@@ -19,7 +27,7 @@ def linkify_timestamps(text: str) -> str:
         date = m.group(2).strip()
         timestamp = m.group(3).strip()
         return f"[Lecture {date} @ {timestamp}]({LECCAP_BASE}/{code})"
-    return re.sub(r"<([A-Za-z0-9]+),\s*([0-9]+-[0-9]+-[0-9]+),\s*([0-9]+:[0-9]+)>", _replace, text)
+    return TIMESTAMP_RE.sub(_replace, text)
 
 def get_db():
     return psycopg.connect(DATABASE_URL)
@@ -170,18 +178,31 @@ def send_message():
 
             try:
                 agent_reply = get_reply(prompt + " Additionally, when referencing a timestamp, always do so in the format <id, date, time>.", oracle_session_id)
+                timestamps = extract_timestamps(agent_reply)
                 agent_reply = linkify_timestamps(agent_reply)
             except ServiceError as e:
                 agent_reply = f"Sorry, the AI agent could not process that request. ({e.message})"
+                timestamps = []
 
             cur.execute(
                 "INSERT INTO messages (chat_id, sender, text) VALUES (%s, 'user', %s)",
                 (chat_id, prompt)
             )
             cur.execute(
-                "INSERT INTO messages (chat_id, sender, text) VALUES (%s, 'agent', %s)",
+                "INSERT INTO messages (chat_id, sender, text) VALUES (%s, 'agent', %s) RETURNING message_id",
                 (chat_id, agent_reply)
             )
+            agent_message_id = cur.fetchone()[0]
+
+            # Log every referenced recording timestamp for analytics
+            for _rec_id, rec_date, rec_time in timestamps:
+                cur.execute(
+                    """
+                    INSERT INTO recording_hits (message_id, class_id, rec_date, rec_time)
+                    VALUES (%s, %s, %s, %s)
+                    """,
+                    (agent_message_id, class_id, rec_date, rec_time)
+                )
 
         conn.commit()
 
