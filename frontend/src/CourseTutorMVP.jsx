@@ -31,8 +31,27 @@ const CourseTutorMVP = () => {
     const [inputMessage, setInputMessage] = useState('');
     const [isLoading, setIsLoading] = useState(false);
 
+    const audioRef = useRef(null);
+    const [ttsEnabled, setTtsEnabled] = useState(true);
+    const [isSpeaking, setIsSpeaking] = useState(false);
+    
     const chatEndRef = useRef(null);
+
+    const TEST_PARAGRAPH =
+    "Yo computaaaaaahhhhhhhhhhh yesssss get in";
     // --- API Calls ---
+    useEffect(() => {
+    // Auto-speak once when the page loads
+    window.speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(TEST_PARAGRAPH);
+    u.lang = "en-US";
+    u.rate = 1.0;
+    u.pitch = 1.0;
+    window.speechSynthesis.speak(u);
+
+    // Cleanup if user navigates away / component unmounts
+    return () => window.speechSynthesis.cancel();
+    }, []);
 
     // 1. /api/get_classes
     useEffect(() => {
@@ -76,6 +95,7 @@ const CourseTutorMVP = () => {
             text: inputMessage
         };
         setChatHistory(prev => [...prev, newMessage]);
+        speak(agentResponse.text);
         setInputMessage('');
         setIsLoading(true);
 
@@ -100,6 +120,38 @@ const CourseTutorMVP = () => {
         }
     };
 
+    const speak = async (text) => {
+    if (!ttsEnabled || !text?.trim()) return;
+
+    try {
+        setIsSpeaking(true);
+
+        const res = await fetch('/api/tts', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({ text }),
+        });
+
+        if (!res.ok) throw new Error(`TTS failed: ${res.status}`);
+
+        const blob = await res.blob();              // audio/mpeg
+        const url = URL.createObjectURL(blob);
+
+        // reuse one audio element
+        if (!audioRef.current) audioRef.current = new Audio();
+        audioRef.current.pause();
+
+        audioRef.current.src = url;
+        audioRef.current.onended = () => setIsSpeaking(false);
+
+        await audioRef.current.play();
+    } catch (e) {
+        console.error(e);
+        setIsSpeaking(false);
+    }
+    };
+    
     // --- Render UI ---
     return (
         <div className="flex h-screen bg-gray-50 font-sans">
@@ -130,12 +182,18 @@ const CourseTutorMVP = () => {
             <div className="flex-1 flex flex-col">
 
                 {/* Header */}
-                <div className="bg-white border-b p-4 shadow-sm flex justify-between items-center">
-                    <h1 className="text-lg font-semibold text-gray-800">
-                        {selectedCourse} - Digital Assistant
-                    </h1>
-                    <span className="text-sm text-gray-500 bg-gray-100 px-3 py-1 rounded-full">MVP Demo</span>
-                </div>
+                <div className="flex items-center gap-3">
+                    <button
+                        type="button"
+                        onClick={() => setTtsEnabled(v => !v)}
+                        className="text-sm text-gray-600 bg-gray-100 px-3 py-1 rounded-full"
+                    >
+                        Voice: {ttsEnabled ? 'On' : 'Off'}
+                    </button>
+                    <span className="text-sm text-gray-500 bg-gray-100 px-3 py-1 rounded-full">
+                        {isSpeaking ? 'Speaking…' : 'MVP Demo'}
+                    </span>
+                    </div>
 
                 {/* Chat History */}
                 <div className="flex-1 p-6 overflow-y-auto bg-gray-50">

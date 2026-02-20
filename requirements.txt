@@ -4,6 +4,8 @@ uvicorn[standard]==0.34.0
 
 # ---- Oracle Cloud (GenAI + Speech/TTS) ----
 oci==2.129.0
+pyttsx3==2.98
+edge-tts==6.1.10
 
 # ---- HTTP + config ----
 requests==2.32.3
