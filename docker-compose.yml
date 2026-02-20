@@ -1,48 +1,23 @@
 services:
-  postgres:
+  db:
     image: postgres:16
-    container_name: cartwise-postgres
+    container_name: tutor-postgres
+    restart: unless-stopped
     environment:
-      POSTGRES_USER: cartwise
-      POSTGRES_PASSWORD: cartwise_pw
-      POSTGRES_DB: cartwise
+      POSTGRES_USER: tutor
+      POSTGRES_PASSWORD: tutor_pw
+      POSTGRES_DB: tutor
     ports:
       - "5432:5432"
     volumes:
-      - cartwise_pgdata:/var/lib/postgresql/data
+      - tutor_pgdata:/var/lib/postgresql/data
+      # Optional: auto-run schema on first startup
+      - ./init:/docker-entrypoint-initdb.d
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U cartwise -d cartwise"]
-      interval: 3s
-      timeout: 3s
-      retries: 20
-
-  dynamodb:
-    image: amazon/dynamodb-local
-    container_name: cartwise-dynamodb
-    command: ["-jar", "DynamoDBLocal.jar", "-sharedDb", "-inMemory"]
-    ports:
-      - "8000:8000"
-    healthcheck:
-      test: ["CMD-SHELL", "curl -s http://localhost:8000/ > /dev/null || exit 1"]
-      interval: 3s
-      timeout: 3s
-      retries: 20
-
-  dynamodb-init:
-    image: amazon/aws-cli:2.15.57
-    container_name: cartwise-dynamodb-init
-    depends_on:
-      dynamodb:
-        condition: service_healthy
-    environment:
-      AWS_ACCESS_KEY_ID: dummy
-      AWS_SECRET_ACCESS_KEY: dummy
-      AWS_DEFAULT_REGION: us-east-1
-      AWS_EC2_METADATA_DISABLED: "true"
-      AWS_PAGER: ""
-    volumes:
-      - ./init-ddb.sh:/init-ddb.sh:ro
-    entrypoint: ["/bin/sh", "/init-ddb.sh"]
+      test: ["CMD-SHELL", "pg_isready -U tutor -d tutor"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
 
 volumes:
-  cartwise_pgdata:
+  tutor_pgdata:
