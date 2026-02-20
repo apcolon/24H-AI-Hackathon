@@ -4,7 +4,7 @@ import hashlib
 import secrets
 from flask import Flask, request, jsonify, make_response, send_file
 import psycopg
-from app.oracle_genai import create_session, get_reply, generate_podcast as generate_podcast_ai
+from app.oracle_genai import create_session, get_reply, generate_podcast as generate_podcast_ai, _load_config
 from oci.exceptions import ServiceError
 import oci
 from io import BytesIO
@@ -221,7 +221,7 @@ def oci_tts_mp3(text: str) -> bytes:
     """Generate MP3 audio from text using OCI TTS with Henry voice."""
     global _HENRY_VOICE_ID
 
-    config = oci.config.from_file(profile_name="DEFAULT")
+    config = _load_config()
     scope_ocid = config.get("compartment_id") or config.get("tenancy")
     if not scope_ocid:
         raise ValueError("Missing tenancy in ~/.oci/config [DEFAULT].")
@@ -358,11 +358,53 @@ def generate_podcast():
                     )
 
         # Create a podcast generation prompt
-        podcast_prompt = f"Generate a short podcast summary (2-3 minutes of narration) based on the lecture recording {recording_id} from {course}. Focus on the main concepts and key takeaways. Make it engaging and conversational."
+        podcast_prompt = """
+        You are a teaching assistant writing a spoken refresher script for students about to
+        attend the next lecture. Your job is to briefly re-teach the material — not describe
+        it, not list it, but actually explain it again as if the student forgot everything.
 
+        Write in a conversational, present-tense, first-person plural tone ("we", "you").
+        Explain concepts mechanically and concretely — always say HOW something works,
+        not just THAT it exists or is important.
+
+        Structure:
+        - Follow the order concepts were taught in the lecture
+        - For each concept: one framing sentence, 2-3 sentences of concrete explanation,
+        one example or analogy from the lecture
+        - Transition between topics using phrases like "Building on that...",
+        "Which brings us to...", "Related to this...", "And this is where X comes in..."
+
+        Content rules:
+        - Only use information explicitly present in the retrieved chunks — do not infer,
+        generalize, or fill gaps with outside knowledge
+        - If a concept is not in the retrieved content, do not include it
+        - Every concept needs its actual mechanics explained — never say "this is important
+        for consistency" without explaining the mechanism that ensures that consistency
+        - If a concept is a prerequisite for another, introduce it first regardless of order
+        in the retrieved content
+        - Never repeat a concept already explained — every paragraph must introduce something new
+        - Skip setup statements framed as assumptions or simplifications unless the assumption
+        itself is the core concept
+        - Give equal depth to each concept — do not rush later concepts because earlier
+        ones took too long
+
+        Format rules:
+        - Start immediately with the first substantive concept — no intro sentence,
+        no "in this lecture", no "today we"
+        - DIVE RIGHT INTO IT, NOT INTRO, NO FLUFF.
+        - No bullet points, no headers, no timestamps
+        - ABSOLUTELY NO TIMESTAMPS
+        - ABSOLUTELY NO LECTURE ID
+        - No filler phrases like "this is critical", "it's essential to understand",
+        "this is important" — just explain the thing
+        - Do not conclude or summarize at the end — end on the last concept
+        - Write approximately 700 words — do not stop early
+        - If you are approaching the end, wrap up the current concept cleanly
+        rather than cutting off mid-sentence
+        """
         # Call generate_podcast_ai to generate the podcast content filtered by recording_id
         try:
-            podcast_text = generate_podcast_ai(podcast_prompt, oracle_session_id, recording_id)
+            podcast_text = generate_podcast_ai(podcast_prompt, str(oracle_session_id), recording_id)
         except ServiceError as e:
             podcast_text = f"Sorry, the podcast generator could not process that request. {e.message}"
 

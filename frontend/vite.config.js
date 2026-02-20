@@ -10,7 +10,10 @@ export default defineConfig({
   ],
   server: {
     proxy: {
-      '/api': 'http://localhost:4000',
+      '/api': {
+        target: 'http://localhost:4000',
+        timeout: 300000,       // 5 min – podcast generation is slow
+      },
     },
   },
 })
