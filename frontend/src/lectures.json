@@ -1,0 +1,450 @@
+{
+  "econ409": [
+    {
+      "lecture_date": "1-14-2025",
+      "recording_id": "fy27Bp"
+    },
+    {
+      "lecture_date": "1-16-2025",
+      "recording_id": "91BydU"
+    },
+    {
+      "lecture_date": "1-21-2025",
+      "recording_id": "Pgbit2"
+    },
+    {
+      "lecture_date": "1-23-2025",
+      "recording_id": "xmAOIa"
+    },
+    {
+      "lecture_date": "1-28-2025",
+      "recording_id": "ePMdQx"
+    },
+    {
+      "lecture_date": "1-30-2025",
+      "recording_id": "XkgnYt"
+    },
+    {
+      "lecture_date": "1-9-2025",
+      "recording_id": "qvYw1L"
+    },
+    {
+      "lecture_date": "2-11-2025",
+      "recording_id": "J2OaPt"
+    },
+    {
+      "lecture_date": "2-13-2025",
+      "recording_id": "j54dNc"
+    },
+    {
+      "lecture_date": "2-18-2025",
+      "recording_id": "Il7V5d"
+    },
+    {
+      "lecture_date": "2-20-2025",
+      "recording_id": "XH2qUD"
+    },
+    {
+      "lecture_date": "2-25-2025",
+      "recording_id": "td85uC"
+    },
+    {
+      "lecture_date": "2-27-2025",
+      "recording_id": "DhgkRD"
+    },
+    {
+      "lecture_date": "2-4-2025",
+      "recording_id": "L5U0jZ"
+    },
+    {
+      "lecture_date": "2-6-2025",
+      "recording_id": "sZZAwO"
+    },
+    {
+      "lecture_date": "3-11-2025",
+      "recording_id": "XuIDtf"
+    },
+    {
+      "lecture_date": "3-13-2025",
+      "recording_id": "eLOkIi"
+    },
+    {
+      "lecture_date": "3-18-2025",
+      "recording_id": "Rv8suq"
+    },
+    {
+      "lecture_date": "3-20-2025",
+      "recording_id": "SYYGyH"
+    },
+    {
+      "lecture_date": "3-25-2025",
+      "recording_id": "f3pqaO"
+    },
+    {
+      "lecture_date": "3-27-2025",
+      "recording_id": "Mn37YO"
+    },
+    {
+      "lecture_date": "4-1-2025",
+      "recording_id": "3VDfAX"
+    },
+    {
+      "lecture_date": "4-10-2025",
+      "recording_id": "u8GiOk"
+    },
+    {
+      "lecture_date": "4-15-2025",
+      "recording_id": "kRz5CI"
+    },
+    {
+      "lecture_date": "4-17-2025",
+      "recording_id": "UrfDg5"
+    },
+    {
+      "lecture_date": "4-22-2025",
+      "recording_id": "M7JRZD"
+    },
+    {
+      "lecture_date": "4-3-2025",
+      "recording_id": "UWrbnl"
+    },
+    {
+      "lecture_date": "4-8-2025",
+      "recording_id": "Y0lY2P"
+    }
+  ],
+  "eecs388": [
+    {
+      "lecture_date": "10-1-2024",
+      "recording_id": "DceqdT"
+    },
+    {
+      "lecture_date": "10-10-2024",
+      "recording_id": "INXUec"
+    },
+    {
+      "lecture_date": "10-17-2024",
+      "recording_id": "hLjyfh"
+    },
+    {
+      "lecture_date": "10-22-2024",
+      "recording_id": "TL35a8"
+    },
+    {
+      "lecture_date": "10-24-2024",
+      "recording_id": "pkdchM"
+    },
+    {
+      "lecture_date": "10-29-2024",
+      "recording_id": "XSifG2"
+    },
+    {
+      "lecture_date": "10-3-2024",
+      "recording_id": "EJ0V9I"
+    },
+    {
+      "lecture_date": "10-31-2024",
+      "recording_id": "McV2qz"
+    },
+    {
+      "lecture_date": "10-8-2024",
+      "recording_id": "HYk62N"
+    },
+    {
+      "lecture_date": "11-12-2024",
+      "recording_id": "LrDpnQ"
+    },
+    {
+      "lecture_date": "11-14-2024",
+      "recording_id": "Tghx8h"
+    },
+    {
+      "lecture_date": "11-19-2024",
+      "recording_id": "rJypMy"
+    },
+    {
+      "lecture_date": "11-21-2024",
+      "recording_id": "wwO7UB"
+    },
+    {
+      "lecture_date": "11-26-2024",
+      "recording_id": "Cylm7P"
+    },
+    {
+      "lecture_date": "11-5-2024",
+      "recording_id": "cYQbjp"
+    },
+    {
+      "lecture_date": "11-7-2024",
+      "recording_id": "oIjtDU"
+    },
+    {
+      "lecture_date": "12-3-2024",
+      "recording_id": "4Q20u3"
+    },
+    {
+      "lecture_date": "12-5-2024",
+      "recording_id": "YOnRBc"
+    },
+    {
+      "lecture_date": "8-27-2024",
+      "recording_id": "EJjFTW"
+    },
+    {
+      "lecture_date": "8-29-2024",
+      "recording_id": "xdOVNI"
+    },
+    {
+      "lecture_date": "9-10-2024",
+      "recording_id": "q19wIe"
+    },
+    {
+      "lecture_date": "9-12-2024",
+      "recording_id": "4KwIzX"
+    },
+    {
+      "lecture_date": "9-17-2024",
+      "recording_id": "H6LWU9"
+    },
+    {
+      "lecture_date": "9-19-2024",
+      "recording_id": "WHsWAp"
+    },
+    {
+      "lecture_date": "9-24-2024",
+      "recording_id": "JGOMwD"
+    },
+    {
+      "lecture_date": "9-26-2024",
+      "recording_id": "ldnbF2"
+    },
+    {
+      "lecture_date": "9-3-2024",
+      "recording_id": "cCZIs5"
+    },
+    {
+      "lecture_date": "9-5-2024",
+      "recording_id": "HrIT2J"
+    }
+  ],
+  "eecs484": [
+    {
+      "lecture_date": "10-16-2025",
+      "recording_id": "M4HnF3"
+    },
+    {
+      "lecture_date": "10-2-2025",
+      "recording_id": "8AllHn"
+    },
+    {
+      "lecture_date": "10-21-2025",
+      "recording_id": "L3LTBS"
+    },
+    {
+      "lecture_date": "10-23-2025",
+      "recording_id": "jWStNe"
+    },
+    {
+      "lecture_date": "10-28-2025",
+      "recording_id": "n96pex"
+    },
+    {
+      "lecture_date": "10-30-2025",
+      "recording_id": "ORvCWP"
+    },
+    {
+      "lecture_date": "10-7-2025",
+      "recording_id": "bZqd4g"
+    },
+    {
+      "lecture_date": "10-9-2025",
+      "recording_id": "Qcvubw"
+    },
+    {
+      "lecture_date": "11-11-2025",
+      "recording_id": "tG2plE"
+    },
+    {
+      "lecture_date": "11-13-2025",
+      "recording_id": "JNgAMO"
+    },
+    {
+      "lecture_date": "11-18-2025",
+      "recording_id": "dWQyks"
+    },
+    {
+      "lecture_date": "11-20-2025",
+      "recording_id": "7Z7iqK"
+    },
+    {
+      "lecture_date": "11-25-2025",
+      "recording_id": "HZaCRA"
+    },
+    {
+      "lecture_date": "11-4-2025",
+      "recording_id": "7CEail"
+    },
+    {
+      "lecture_date": "11-6-2025",
+      "recording_id": "gZxytD"
+    },
+    {
+      "lecture_date": "12-2-2025",
+      "recording_id": "Ez3DyT"
+    },
+    {
+      "lecture_date": "12-4-2025",
+      "recording_id": "QhJJy1"
+    },
+    {
+      "lecture_date": "8-26-2025",
+      "recording_id": "1LRnwx"
+    },
+    {
+      "lecture_date": "8-28-2025",
+      "recording_id": "DmlXbT"
+    },
+    {
+      "lecture_date": "9-11-2025",
+      "recording_id": "yTWPmg"
+    },
+    {
+      "lecture_date": "9-16-2025",
+      "recording_id": "45w74S"
+    },
+    {
+      "lecture_date": "9-18-2025",
+      "recording_id": "5xLHKM"
+    },
+    {
+      "lecture_date": "9-2-2025",
+      "recording_id": "ZqnxaN"
+    },
+    {
+      "lecture_date": "9-23-2025",
+      "recording_id": "L4GEfm"
+    },
+    {
+      "lecture_date": "9-25-2025",
+      "recording_id": "ZVYWBa"
+    },
+    {
+      "lecture_date": "9-30-2025",
+      "recording_id": "YSf6t0"
+    },
+    {
+      "lecture_date": "9-4-2025",
+      "recording_id": "eko59W"
+    },
+    {
+      "lecture_date": "9-9-2025",
+      "recording_id": "im7DbO"
+    }
+  ],
+  "phil183": [
+    {
+      "lecture_date": "10-1-2025",
+      "recording_id": "pfJMNS"
+    },
+    {
+      "lecture_date": "10-20-2025",
+      "recording_id": "02176o"
+    },
+    {
+      "lecture_date": "10-22-2025",
+      "recording_id": "EMzNyy"
+    },
+    {
+      "lecture_date": "10-27-2025",
+      "recording_id": "zGQz5e"
+    },
+    {
+      "lecture_date": "10-29-2025",
+      "recording_id": "xcwyZG"
+    },
+    {
+      "lecture_date": "10-6-2025",
+      "recording_id": "Q28Bzb"
+    },
+    {
+      "lecture_date": "10-8-2025",
+      "recording_id": "aFHUxm"
+    },
+    {
+      "lecture_date": "11-10-2025",
+      "recording_id": "8lSC89"
+    },
+    {
+      "lecture_date": "11-12-2025",
+      "recording_id": "ZebcoS"
+    },
+    {
+      "lecture_date": "11-17-2025",
+      "recording_id": "oEeI8J"
+    },
+    {
+      "lecture_date": "11-19-2025",
+      "recording_id": "TmP0dc"
+    },
+    {
+      "lecture_date": "11-3-2025",
+      "recording_id": "ZLoukE"
+    },
+    {
+      "lecture_date": "11-5-2025",
+      "recording_id": "MfblAI"
+    },
+    {
+      "lecture_date": "12-1-2025",
+      "recording_id": "0p1hfI"
+    },
+    {
+      "lecture_date": "12-3-2025",
+      "recording_id": "WxoyM0"
+    },
+    {
+      "lecture_date": "12-8-2025",
+      "recording_id": "BaEqzl"
+    },
+    {
+      "lecture_date": "8-25-2025",
+      "recording_id": "QbIKqJ"
+    },
+    {
+      "lecture_date": "8-27-2025",
+      "recording_id": "jo4VU5"
+    },
+    {
+      "lecture_date": "9-10-2025",
+      "recording_id": "yIOsCH"
+    },
+    {
+      "lecture_date": "9-15-2025",
+      "recording_id": "XTAS5h"
+    },
+    {
+      "lecture_date": "9-17-2025",
+      "recording_id": "wXETRi"
+    },
+    {
+      "lecture_date": "9-22-2025",
+      "recording_id": "Fha4oX"
+    },
+    {
+      "lecture_date": "9-24-2025",
+      "recording_id": "Y8J7D3"
+    },
+    {
+      "lecture_date": "9-29-2025",
+      "recording_id": "s6EDZI"
+    },
+    {
+      "lecture_date": "9-3-2025",
+      "recording_id": "Dcahfp"
+    },
+    {
+      "lecture_date": "9-8-2025",
+      "recording_id": "pVf46K"
+    }
+  ]
+}

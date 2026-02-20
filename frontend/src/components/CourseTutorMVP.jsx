@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import "../styles/App.css";
+import lecturesData from "../lectures.json";
 
 /**
  * Render markdown-style links [text](url) as clickable <a> tags.
@@ -67,6 +68,8 @@ const CourseTutorMVP = () => {
   const audioRef = useRef(null);
   const [ttsEnabled, setTtsEnabled] = useState(true);
   const [isSpeaking, setIsSpeaking] = useState(false);
+  const [showPodcastModal, setShowPodcastModal] = useState(false);
+  const [isPodcastGenerating, setIsPodcastGenerating] = useState(false);
   const chatEndRef = useRef(null);
 
   // Theme: init from localStorage, fallback to OS preference
@@ -156,7 +159,6 @@ const CourseTutorMVP = () => {
         text: data.reply,
       };
       setChatHistory((prev) => [...prev, agentResponse]);
-      speak(agentResponse.text);
     } catch (error) {
       console.error("Failed to send message:", error);
       setChatHistory((prev) => [
@@ -177,7 +179,7 @@ const CourseTutorMVP = () => {
     if (!ttsEnabled || !text?.trim()) return;
     try {
       setIsSpeaking(true);
-      const res = await fetch("http://127.0.0.1:8000/api/tts", {
+      const res = await fetch("/api/tts", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -194,6 +196,38 @@ const CourseTutorMVP = () => {
     } catch (e) {
       console.error(e);
       setIsSpeaking(false);
+    }
+  };
+
+  const handleGeneratePodcast = async (recordingId) => {
+    setShowPodcastModal(false);
+    setIsPodcastGenerating(true);
+
+    try {
+      const res = await fetch("/api/generate_podcast", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          course: selectedCourse,
+          recording_id: recordingId,
+        }),
+      });
+
+      if (!res.ok) {
+        throw new Error(`Podcast generation failed: ${res.status}`);
+      }
+
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      if (!audioRef.current) audioRef.current = new Audio();
+      audioRef.current.pause();
+      audioRef.current.src = url;
+      audioRef.current.onended = () => setIsPodcastGenerating(false);
+      await audioRef.current.play();
+    } catch (error) {
+      console.error("Podcast generation error:", error);
+      setIsPodcastGenerating(false);
     }
   };
 
@@ -305,15 +339,25 @@ const CourseTutorMVP = () => {
           {/* Generate Podcast button */}
           <button
             type="button"
-            onClick={() => {
-              // TODO: Implement podcast generation
-            }}
-            className={`w-full flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium transition-all cursor-pointer bg-linear-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-white border border-amber-400/30 shadow-lg shadow-amber-500/20`}
+            onClick={() => setShowPodcastModal(true)}
+            disabled={isPodcastGenerating}
+            className={`w-full flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium transition-all cursor-pointer bg-linear-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-white border border-amber-400/30 shadow-lg shadow-amber-500/20 disabled:opacity-50 disabled:cursor-not-allowed`}
           >
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
-            </svg>
-            Generate Short Podcast!
+            {isPodcastGenerating ? (
+              <>
+                <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+                Generating...
+              </>
+            ) : (
+              <>
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
+                </svg>
+                Generate Short Podcast!
+              </>
+            )}
           </button>
         </div>
       </aside>
@@ -447,6 +491,76 @@ const CourseTutorMVP = () => {
             </p>
           </form>
         </div>
+
+        {/* Podcast Modal */}
+        {showPodcastModal && (
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+            <div className={`${dark ? "bg-slate-900 border border-white/10" : "bg-white border border-gray-200"} rounded-2xl shadow-2xl w-96 max-h-[80vh] flex flex-col`}>
+              <div className={`px-6 py-4 border-b ${dark ? "border-white/10" : "border-gray-200"} flex items-center justify-between`}>
+                <h2 className={`text-lg font-semibold ${dark ? "text-white" : "text-gray-900"}`}>
+                  Select Lecture for Podcast
+                </h2>
+                <button
+                  onClick={() => setShowPodcastModal(false)}
+                  className={`p-1 rounded-lg transition-colors ${dark ? "hover:bg-white/10" : "hover:bg-gray-100"}`}
+                >
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+
+              <div className={`flex-1 overflow-y-auto ${dark ? "divide-white/5" : "divide-gray-100"}`}>
+                {lecturesData[selectedCourse]?.length > 0 ? (
+                  <div className="divide-y">
+                    {lecturesData[selectedCourse]
+                      .sort((a, b) => new Date(b.lecture_date) - new Date(a.lecture_date))
+                      .map((lecture, idx) => (
+                        <button
+                          key={idx}
+                          onClick={() => handleGeneratePodcast(lecture.recording_id)}
+                          disabled={isPodcastGenerating}
+                          className={`w-full text-left px-6 py-3 transition-colors ${
+                            dark
+                              ? "hover:bg-white/5 disabled:bg-white/2"
+                              : "hover:bg-gray-50 disabled:bg-gray-50"
+                          } disabled:opacity-50 disabled:cursor-not-allowed`}
+                        >
+                          <div className={`text-sm font-medium ${dark ? "text-white" : "text-gray-900"}`}>
+                            {new Date(lecture.lecture_date).toLocaleDateString("en-US", {
+                              month: "short",
+                              day: "numeric",
+                              year: "numeric",
+                            })}
+                          </div>
+                          <div className={`text-xs mt-0.5 ${dark ? "text-slate-400" : "text-gray-500"}`}>
+                            ID: {lecture.recording_id}
+                          </div>
+                        </button>
+                      ))}
+                  </div>
+                ) : (
+                  <div className={`px-6 py-8 text-center ${dark ? "text-slate-400" : "text-gray-500"}`}>
+                    No lectures available
+                  </div>
+                )}
+              </div>
+
+              <div className={`px-6 py-3 border-t ${dark ? "border-white/10" : "border-gray-200"} flex justify-end`}>
+                <button
+                  onClick={() => setShowPodcastModal(false)}
+                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    dark
+                      ? "text-slate-300 hover:bg-white/10"
+                      : "text-gray-600 hover:bg-gray-100"
+                  }`}
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </main>
     </div>
   );
