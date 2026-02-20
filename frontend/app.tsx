@@ -102,7 +102,7 @@ const CourseTutorMVP = () => {
                 <div className="p-4 flex-grow overflow-y-auto">
                     <h2 className="text-sm text-gray-400 mb-3 uppercase tracking-wider">Your Classes</h2>
                     <ul>
-                        {classes.map((courseName) => (
+                        {(classes as string[]).map((courseName: string): JSX.Element => (
                             <li key={courseName} className="mb-2">
                                 <button
                                     onClick={() => setSelectedCourse(courseName)}
