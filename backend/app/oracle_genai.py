@@ -8,29 +8,57 @@ from oci.generative_ai_agent_runtime.models import CreateSessionDetails, ChatDet
 SERVICE_EP = "https://agent-runtime.generativeai.us-ashburn-1.oci.oraclecloud.com"
 AGENT_ENDPOINT_ID = "ocid1.genaiagentendpoint.oc1.iad.amaaaaaampxat2aaxjz33hwfopkwsudqpudspkm5jubn6vtpi6mcbo6jnpya"
 
+podcast_prompt = "talk to me about this lecture"
+
 
 def _load_config():
     """Load OCI config, remapping key_file to the current environment's ~/.oci/
     so it works both locally and inside Docker (where the host path differs)."""
     oci_dir = os.path.expanduser("~/.oci")
+    config_file = os.path.join(oci_dir, "config")
     parser = configparser.ConfigParser()
-    parser.read(os.path.join(oci_dir, "config"))
+    parser.read(config_file)
     cfg = dict(parser["DEFAULT"])
-    cfg["key_file"] = os.path.join(oci_dir, os.path.basename(cfg["key_file"]))
-    oci.config.validate_config(cfg)
+    
+    # Remap key_file to use the current environment's oci_dir
+    original_key_file = cfg.get("key_file", "")
+    if original_key_file:
+        key_filename = os.path.basename(original_key_file)
+        remapped_path = os.path.join(oci_dir, key_filename)
+        cfg["key_file"] = remapped_path
+        # Verify the remapped path exists
+        if not os.path.exists(remapped_path):
+            raise FileNotFoundError(f"OCI key file not found at: {remapped_path}")
+    
     return cfg
 
 
-config = _load_config()
+config = None
+client = None
 
-client = generative_ai_agent_runtime.GenerativeAiAgentRuntimeClient(
-    config=config,
-    service_endpoint=SERVICE_EP,
-)
+
+def _get_client():
+    """Get or create the OCI client lazily."""
+    global client
+    if client is None:
+        try:
+            cfg = _load_config()
+            print(f"[DEBUG] Loaded OCI config: key_file={cfg.get('key_file')}, region={cfg.get('region')}")
+            # Don't validate yet - let the SDK validate when we actually use it
+            client = generative_ai_agent_runtime.GenerativeAiAgentRuntimeClient(
+                config=cfg,
+                service_endpoint=SERVICE_EP,
+            )
+            print("[DEBUG] OCI client initialized successfully")
+        except Exception as e:
+            print(f"Failed to initialize OCI client: {e}")
+            raise
+    return client
 
 
 def create_session(display_name: str) -> str:
     """Create a new OCI agent session and return its ID."""
+    client = _get_client()
     resp = client.create_session(
         agent_endpoint_id=AGENT_ENDPOINT_ID,
         create_session_details=CreateSessionDetails(
@@ -41,11 +69,12 @@ def create_session(display_name: str) -> str:
     return resp.data.id
 
 
-def get_reply(prompt: str, oracle_session_id: str, course_id: str = "eecon409") -> str:
+def get_reply(prompt: str, oracle_session_id: str, course_id: str = "econ409") -> str:
     """Send a message to the agent and return its reply text.
 
     Filters the knowledge-base retrieval so only documents whose
     ``course`` metadata field matches *course_id* are considered.
+    client = _get_client()
     """
     resp = client.chat(
         agent_endpoint_id=AGENT_ENDPOINT_ID,
@@ -62,6 +91,36 @@ def get_reply(prompt: str, oracle_session_id: str, course_id: str = "eecon409") 
                             "operation": "contains",
                             "value": course_id
                             
+                        }
+                    ]
+                })
+            }
+        ),
+    )
+    return resp.data.message.content.text
+
+
+def generate_podcast(prompt: str, oracle_session_id: str, recording_id: str) -> str:
+    """Generate a podcast summary for a specific lecture recording.
+
+    Filters the knowledge-base retrieval so only documents whose
+    ``recording_id`` metadata field matches *recording_id* are considered.
+    client = _get_client()
+    """
+    resp = client.chat(
+        agent_endpoint_id=AGENT_ENDPOINT_ID,
+        chat_details=ChatDetails(
+            user_message=prompt,
+            session_id=oracle_session_id,
+            should_stream=False,
+            tool_parameters={
+                "rag": json.dumps({
+                    "filterConditions": [
+                        {
+                            "field": "recording_id",
+                            "field_type": "string",
+                            "operation": "contains",
+                            "value": recording_id
                         }
                     ]
                 })
