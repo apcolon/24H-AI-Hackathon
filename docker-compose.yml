@@ -11,13 +11,30 @@ services:
       - "5432:5432"
     volumes:
       - tutor_pgdata:/var/lib/postgresql/data
-      # Optional: auto-run schema on first startup
       - ./init:/docker-entrypoint-initdb.d
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U tutor -d tutor"]
       interval: 5s
       timeout: 5s
       retries: 10
+
+  api:
+    build: ./backend
+    container_name: tutor-api
+    restart: unless-stopped
+    environment:
+      # IMPORTANT: use db hostname, not localhost
+      DATABASE_URL: postgresql://tutor:tutor_pw@db:5432/tutor
+      FLASK_ENV: development
+    ports:
+      - "4000:4000"
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      # mount code for quick iteration
+      - ./backend:/app
+    command: python app.py
 
 volumes:
   tutor_pgdata:
