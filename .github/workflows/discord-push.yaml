@@ -1,4 +1,4 @@
-name: Discord Push Notifier
+name: Discord AI Push Summary
 
 on:
   push:
@@ -8,26 +8,117 @@ permissions:
   contents: read
 
 jobs:
-  notify:
+  summarize:
     runs-on: ubuntu-latest
+
     steps:
-      - name: Post to Discord
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Build diff (truncated)
+        run: |
+          echo "DIFF<<EOF" >> $GITHUB_ENV
+          git diff --unified=2 HEAD~1 HEAD | head -c 12000 >> $GITHUB_ENV
+          echo "" >> $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV
+
+      - name: Generate AI summary and post to Discord
         env:
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+
+          REPO: ${{ github.repository }}
+          BRANCH: ${{ github.ref_name }}
+          ACTOR: ${{ github.actor }}
+          COMMIT_MSG: ${{ github.event.head_commit.message }}
+          COMMIT_URL: ${{ github.event.head_commit.url }}
+          COMPARE_URL: https://github.com/${{ github.repository }}/compare/${{ github.event.before }}...${{ github.sha }}
+
+          DIFF: ${{ env.DIFF }}
+
         run: |
-          if [ -z "$DISCORD_WEBHOOK_URL" ]; then
-            echo "::error::DISCORD_WEBHOOK_URL secret is not set"
-            exit 1
-          fi
+          python3 <<'PY'
+          import os, json, urllib.request, textwrap
 
-          CONTENT="🚀 **Push to \`${{ github.ref_name }}\`** in **${{ github.repository }}** by **${{ github.actor }}**
-          **Message:** ${{ github.event.head_commit.message }}
-          ${{ github.event.head_commit.url }}"
+          webhook = os.environ["DISCORD_WEBHOOK_URL"]
+          api_key = os.environ["OPENAI_API_KEY"]
 
-          # Escape special JSON characters
-          CONTENT=$(echo "$CONTENT" | python3 -c 'import sys,json; print(json.dumps(sys.stdin.read().strip()))')
+          diff = os.environ.get('DIFF', '')
+          repo = os.environ.get('REPO', '')
+          branch = os.environ.get('BRANCH', '')
+          actor = os.environ.get('ACTOR', '')
+          commit_msg = os.environ.get('COMMIT_MSG', '')
+          commit_url = os.environ.get('COMMIT_URL', '')
+          compare_url = os.environ.get('COMPARE_URL', '')
 
-          curl -sfS -o /dev/null -w "HTTP %{http_code}\n" \
-            -H "Content-Type: application/json" \
-            -d "{\"content\": $CONTENT}" \
-            "$DISCORD_WEBHOOK_URL"
+          prompt = textwrap.dedent(f"""\
+          Summarize this Git push for the engineering team.
+
+          Return:
+          - 3-6 bullet summary of what changed
+          - Risk areas or possible breakages
+          - Concrete things to test next
+
+          Repository: {repo}
+          Branch: {branch}
+          Author: {actor}
+          Commit message: {commit_msg}
+          Commit URL: {commit_url}
+
+          Diff (truncated):
+          {diff}
+          """)
+
+          # Call OpenAI Responses API
+          req = urllib.request.Request(
+              "https://api.openai.com/v1/responses",
+              data=json.dumps({
+                  "model": "gpt-4.1-mini",
+                  "input": prompt
+              }).encode("utf-8"),
+              headers={
+                  "Authorization": f"Bearer {api_key}",
+                  "Content-Type": "application/json",
+              },
+          )
+
+          try:
+              with urllib.request.urlopen(req) as r:
+                  data = json.loads(r.read().decode("utf-8"))
+          except urllib.error.HTTPError as e:
+              body = e.read().decode("utf-8", errors="replace")
+              print(f"OpenAI API error {e.code}: {body}")
+              raise
+
+          text = ""
+          for item in data.get("output", []):
+              for c in item.get("content", []):
+                  if c.get("type") == "output_text":
+                      text += c.get("text", "")
+
+          text = text.strip() or "Summary unavailable."
+
+          header = (
+              f"🤖 **AI Push Summary**\n"
+              f"🔗 Commit: {commit_url}\n"
+              f"📊 Compare: {compare_url}\n\n"
+          )
+
+          message = (header + text)[:1900]
+
+          dreq = urllib.request.Request(
+              webhook,
+              data=json.dumps({"content": message}).encode("utf-8"),
+              headers={"Content-Type": "application/json"},
+          )
+
+          try:
+              urllib.request.urlopen(dreq).read()
+              print("Discord notification sent.")
+          except urllib.error.HTTPError as e:
+              body = e.read().decode("utf-8", errors="replace")
+              print(f"Discord error {e.code}: {body}")
+              raise
+          PY
