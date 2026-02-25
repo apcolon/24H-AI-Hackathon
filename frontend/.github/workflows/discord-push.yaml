@@ -1,0 +1,38 @@
+name: Discord Push Notifier
+
+on:
+  push:
+    branches: [ "main" ]  # change if your default branch is different
+
+permissions:
+  contents: read
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Post to Discord
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          ACTOR: ${{ github.actor }}
+          REPO: ${{ github.repository }}
+          BRANCH: ${{ github.ref_name }}
+          COMMIT_MSG: ${{ github.event.head_commit.message }}
+          COMMIT_URL: ${{ github.event.head_commit.url }}
+        run: |
+          if [ -z "$DISCORD_WEBHOOK_URL" ]; then
+            echo "Missing DISCORD_WEBHOOK_URL secret"
+            exit 1
+          fi
+
+          # Basic escaping for JSON
+          esc_msg=$(printf '%s' "$COMMIT_MSG" | python3 -c 'import json,sys; print(json.dumps(sys.stdin.read())[1:-1])')
+
+          payload=$(cat <<EOF
+          {
+            "content": "🚀 **Push to \`$BRANCH\`** in **$REPO** by **$ACTOR**\\n**Message:** $esc_msg\\n$COMMIT_URL"
+          }
+EOF
+          )
+
+          curl -sS -H "Content-Type: application/json" -d "$payload" "$DISCORD_WEBHOOK_URL"
