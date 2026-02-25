@@ -2,7 +2,7 @@ name: Discord Push Notifier
 
 on:
   push:
-    branches: [ "main" ]  # change if your default branch is different
+    branches: ["main"]   # change if your default branch isn't main
 
 permissions:
   contents: read
@@ -25,14 +25,20 @@ jobs:
             exit 1
           fi
 
-          # Basic escaping for JSON
-          esc_msg=$(printf '%s' "$COMMIT_MSG" | python3 -c 'import json,sys; print(json.dumps(sys.stdin.read())[1:-1])')
+          python3 - <<'PY'
+          import os, json, urllib.request
 
-          payload=$(cat <<EOF
-          {
-            "content": "🚀 **Push to \`$BRANCH\`** in **$REPO** by **$ACTOR**\\n**Message:** $esc_msg\\n$COMMIT_URL"
-          }
-EOF
-          )
+          url = os.environ["DISCORD_WEBHOOK_URL"]
+          actor = os.environ.get("ACTOR","")
+          repo = os.environ.get("REPO","")
+          branch = os.environ.get("BRANCH","")
+          msg = os.environ.get("COMMIT_MSG","").strip()
+          commit_url = os.environ.get("COMMIT_URL","")
 
-          curl -sS -H "Content-Type: application/json" -d "$payload" "$DISCORD_WEBHOOK_URL"
+          content = f"🚀 **Push to `{branch}`** in **{repo}** by **{actor}**\n**Message:** {msg}\n{commit_url}"
+          data = json.dumps({"content": content}).encode("utf-8")
+
+          req = urllib.request.Request(url, data=data, headers={"Content-Type":"application/json"})
+          with urllib.request.urlopen(req) as resp:
+            print("Discord response:", resp.status)
+          PY
