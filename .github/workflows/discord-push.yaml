@@ -2,7 +2,7 @@ name: Discord Push Notifier
 
 on:
   push:
-    branches: ["main"]   # change if your default branch isn't main
+    branches: ["main"]
 
 permissions:
   contents: read
@@ -14,31 +14,20 @@ jobs:
       - name: Post to Discord
         env:
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
-          ACTOR: ${{ github.actor }}
-          REPO: ${{ github.repository }}
-          BRANCH: ${{ github.ref_name }}
-          COMMIT_MSG: ${{ github.event.head_commit.message }}
-          COMMIT_URL: ${{ github.event.head_commit.url }}
         run: |
           if [ -z "$DISCORD_WEBHOOK_URL" ]; then
-            echo "Missing DISCORD_WEBHOOK_URL secret"
+            echo "::error::DISCORD_WEBHOOK_URL secret is not set"
             exit 1
           fi
 
-          python3 - <<'PY'
-          import os, json, urllib.request
+          CONTENT="🚀 **Push to \`${{ github.ref_name }}\`** in **${{ github.repository }}** by **${{ github.actor }}**
+          **Message:** ${{ github.event.head_commit.message }}
+          ${{ github.event.head_commit.url }}"
 
-          url = os.environ["DISCORD_WEBHOOK_URL"]
-          actor = os.environ.get("ACTOR","")
-          repo = os.environ.get("REPO","")
-          branch = os.environ.get("BRANCH","")
-          msg = os.environ.get("COMMIT_MSG","").strip()
-          commit_url = os.environ.get("COMMIT_URL","")
+          # Escape special JSON characters
+          CONTENT=$(echo "$CONTENT" | python3 -c 'import sys,json; print(json.dumps(sys.stdin.read().strip()))')
 
-          content = f"🚀 **Push to `{branch}`** in **{repo}** by **{actor}**\n**Message:** {msg}\n{commit_url}"
-          data = json.dumps({"content": content}).encode("utf-8")
-
-          req = urllib.request.Request(url, data=data, headers={"Content-Type":"application/json"})
-          with urllib.request.urlopen(req) as resp:
-            print("Discord response:", resp.status)
-          PY
+          curl -sfS -o /dev/null -w "HTTP %{http_code}\n" \
+            -H "Content-Type: application/json" \
+            -d "{\"content\": $CONTENT}" \
+            "$DISCORD_WEBHOOK_URL"
