@@ -6,23 +6,26 @@ import lecturesData from "../lectures.json";
 
 /**
  * Render markdown-style links [text](url) as clickable <a> tags.
+ * Leccap links call onLectureClick(url) to open in the embedded viewer.
  */
-function renderMessageText(text, dark) {
+function renderMessageText(text, dark, onLectureClick) {
   const parts = [];
   const linkRe = /\[([^\]]+)\]\(([^)]+)\)/g;
   let last = 0;
   let match;
   while ((match = linkRe.exec(text)) !== null) {
     if (match.index > last) parts.push(text.slice(last, match.index));
-    const isLecture = match[2].includes("leccap");
+    // Capture values so the closure doesn't reference stale `match`
+    const url = match[2];
+    const label = match[1];
+    const key = match.index;
+    const isLecture = url.includes("leccap");
     parts.push(
       isLecture ? (
-        <a
-          key={match.index}
-          href={match[2]}
-          target="_blank"
-          rel="noopener noreferrer"
-          className={`inline-flex items-center gap-2 px-3 py-1.5 my-1 rounded-lg text-sm font-medium transition-all shadow-sm ${
+        <button
+          key={key}
+          onClick={(e) => { e.preventDefault(); onLectureClick?.(url); }}
+          className={`inline-flex items-center gap-2 px-3 py-1.5 my-1 rounded-lg text-sm font-medium transition-all shadow-sm cursor-pointer ${
             dark
               ? "bg-indigo-500/20 text-indigo-300 hover:bg-indigo-500/30 border border-indigo-500/30"
               : "bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border border-indigo-200"
@@ -31,17 +34,17 @@ function renderMessageText(text, dark) {
           <svg className="w-4 h-4 shrink-0" fill="currentColor" viewBox="0 0 20 20">
             <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clipRule="evenodd" />
           </svg>
-          {match[1]}
-        </a>
+          {label}
+        </button>
       ) : (
         <a
-          key={match.index}
-          href={match[2]}
+          key={key}
+          href={url}
           target="_blank"
           rel="noopener noreferrer"
           className={`underline transition-colors ${dark ? "text-indigo-300 hover:text-indigo-100" : "text-indigo-600 hover:text-indigo-800"}`}
         >
-          {match[1]}
+          {label}
         </a>
       ),
     );
@@ -73,6 +76,36 @@ const CourseTutorMVP = () => {
   const [showPodcastModal, setShowPodcastModal] = useState(false);
   const [isPodcastGenerating, setIsPodcastGenerating] = useState(false);
   const chatEndRef = useRef(null);
+
+  // Lecture viewer state
+  const [lectureUrl, setLectureUrl] = useState(null);
+  const [lectureIndex, setLectureIndex] = useState(0);
+  // Use proxied path so Vite strips X-Frame-Options, allowing iframe embedding
+  const LECCAP_PROXY = "/leccap/player/r/";
+  const LECCAP_ORIGIN = "https://leccap.engin.umich.edu/leccap/player/r/";
+
+  // Sorted lectures for the current course
+  const sortedLectures = (lecturesData[selectedCourse] || [])
+    .slice()
+    .sort((a, b) => new Date(a.lecture_date) - new Date(b.lecture_date));
+
+  /** Convert an external leccap URL to the proxied local path */
+  const toProxyUrl = (url) => url.replace(LECCAP_ORIGIN, LECCAP_PROXY);
+
+  /** Open a lecture URL in the embedded viewer, syncing the index */
+  const openLecture = (url) => {
+    setLectureUrl(toProxyUrl(url));
+    // Try to match to a lecture index by recording_id in the URL
+    const idx = sortedLectures.findIndex((l) => url.includes(l.recording_id));
+    if (idx !== -1) setLectureIndex(idx);
+  };
+
+  /** Navigate to a lecture by index */
+  const goToLecture = (idx) => {
+    if (idx < 0 || idx >= sortedLectures.length) return;
+    setLectureIndex(idx);
+    setLectureUrl(LECCAP_PROXY + sortedLectures[idx].recording_id);
+  };
 
   // Theme: init from localStorage, fallback to OS preference
   const [dark, setDark] = useState(() => {
@@ -259,6 +292,24 @@ const CourseTutorMVP = () => {
             </svg>
             New Chat
           </button>
+          {/* Watch Lectures button */}
+          {sortedLectures.length > 0 && (
+            <button
+              onClick={() => goToLecture(0)}
+              className={`w-full flex items-center gap-2 px-4 py-2.5 rounded-xl border text-sm font-medium transition-all cursor-pointer mt-2 ${
+                lectureUrl
+                  ? "bg-indigo-500/20 text-indigo-300 border-indigo-500/30"
+                  : dark
+                    ? "border-white/10 text-slate-300 hover:bg-white/5 hover:text-white"
+                    : "border-gray-200 text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+              }`}
+            >
+              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clipRule="evenodd" />
+              </svg>
+              Watch Lectures
+            </button>
+          )}
         </div>
 
         {/* Divider */}
@@ -273,7 +324,7 @@ const CourseTutorMVP = () => {
             {classes.map((courseName) => (
               <button
                 key={courseName}
-                onClick={() => setSelectedCourse(courseName)}
+                onClick={() => { setSelectedCourse(courseName); setLectureUrl(null); setLectureIndex(0); }}
                 className={`sidebar-item w-full text-left px-3 py-2.5 rounded-xl text-sm font-medium transition-all cursor-pointer ${dark ? "" : "light"} ${
                   selectedCourse === courseName
                     ? `active ${dark ? "text-white" : "text-indigo-700"}`
@@ -367,6 +418,96 @@ const CourseTutorMVP = () => {
       {/* ───── Main Panel ───── */}
       <main className={`flex-1 flex flex-col min-w-0 transition-colors duration-300 ${dark ? "bg-linear-to-br from-slate-950 via-slate-900 to-slate-950" : "bg-gray-50"}`}>
 
+        {/* ───── Embedded Lecture Viewer ───── */}
+        {lectureUrl && (
+          <div className={`shrink-0 border-b transition-colors duration-300 ${dark ? "border-white/10 bg-slate-900/80" : "border-gray-200 bg-white"}`}>
+            {/* Viewer header with controls */}
+            <div className={`flex items-center justify-between px-4 py-2 border-b ${dark ? "border-white/5" : "border-gray-100"}`}>
+              <div className="flex items-center gap-2">
+                <svg className="w-4 h-4 text-indigo-400" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clipRule="evenodd" />
+                </svg>
+                <span className={`text-sm font-medium ${dark ? "text-white" : "text-gray-900"}`}>
+                  Lecture {lectureIndex + 1} of {sortedLectures.length}
+                  {sortedLectures[lectureIndex] && (
+                    <span className={`ml-2 text-xs ${dark ? "text-slate-400" : "text-gray-500"}`}>
+                      ({new Date(sortedLectures[lectureIndex].lecture_date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })})
+                    </span>
+                  )}
+                </span>
+              </div>
+              <div className="flex items-center gap-1">
+                {/* Previous */}
+                <button
+                  onClick={() => goToLecture(lectureIndex - 1)}
+                  disabled={lectureIndex <= 0}
+                  className={`p-1.5 rounded-lg transition-colors cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed ${dark ? "hover:bg-white/10 text-slate-300" : "hover:bg-gray-100 text-gray-600"}`}
+                  title="Previous lecture"
+                >
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+                  </svg>
+                </button>
+                {/* Next */}
+                <button
+                  onClick={() => goToLecture(lectureIndex + 1)}
+                  disabled={lectureIndex >= sortedLectures.length - 1}
+                  className={`p-1.5 rounded-lg transition-colors cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed ${dark ? "hover:bg-white/10 text-slate-300" : "hover:bg-gray-100 text-gray-600"}`}
+                  title="Next lecture"
+                >
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                  </svg>
+                </button>
+                {/* Lecture picker dropdown */}
+                <select
+                  value={lectureIndex}
+                  onChange={(e) => goToLecture(Number(e.target.value))}
+                  className={`ml-2 text-xs rounded-lg px-2 py-1 border outline-none cursor-pointer ${dark ? "bg-slate-800 border-white/10 text-slate-300" : "bg-gray-50 border-gray-200 text-gray-700"}`}
+                >
+                  {sortedLectures.map((l, i) => (
+                    <option key={l.recording_id} value={i}>
+                      {new Date(l.lecture_date).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                    </option>
+                  ))}
+                </select>
+                {/* Open in new tab (real leccap URL) */}
+                <a
+                  href={lectureUrl.replace(LECCAP_PROXY, LECCAP_ORIGIN)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={`p-1.5 rounded-lg transition-colors ${dark ? "hover:bg-white/10 text-slate-400" : "hover:bg-gray-100 text-gray-500"}`}
+                  title="Open in new tab"
+                >
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                  </svg>
+                </a>
+                {/* Close */}
+                <button
+                  onClick={() => setLectureUrl(null)}
+                  className={`p-1.5 rounded-lg transition-colors cursor-pointer ${dark ? "hover:bg-white/10 text-slate-400" : "hover:bg-gray-100 text-gray-500"}`}
+                  title="Close viewer"
+                >
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+            {/* Embedded lecture video via proxy (strips X-Frame-Options) */}
+            <iframe
+              key={lectureUrl}
+              src={lectureUrl}
+              title="Lecture Recording"
+              className="w-full bg-black"
+              style={{ height: "45vh" }}
+              allow="autoplay; fullscreen"
+              allowFullScreen
+            />
+          </div>
+        )}
+
         {/* Top bar */}
         <header className={`h-14 flex items-center justify-between px-6 border-b backdrop-blur-sm shrink-0 transition-colors duration-300 ${dark ? "border-white/5 bg-slate-950/60" : "border-gray-200 bg-white/80"}`}>
           <div className="flex items-center gap-3">
@@ -433,7 +574,7 @@ const CourseTutorMVP = () => {
                             : "bg-white text-gray-800 border border-gray-200 rounded-tl-md shadow-sm"
                       }`}>
                         <span className="whitespace-pre-wrap wrap-break-word">
-                          {isUser ? msg.text : renderMessageText(msg.text, dark)}
+                          {isUser ? msg.text : renderMessageText(msg.text, dark, openLecture)}
                         </span>
                       </div>
                       {msg.time && (
