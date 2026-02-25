@@ -85,9 +85,15 @@ const CourseTutorMVP = () => {
   const LECCAP_ORIGIN = "https://leccap.engin.umich.edu/leccap/player/r/";
 
   // Sorted lectures for the current course
+  const parseLectureDate = (d) => {
+    // lecture_date is "M-D-YYYY"; split and construct to avoid Date misparse
+    const [m, day, y] = d.split("-").map(Number);
+    return new Date(y, m - 1, day);
+  };
+
   const sortedLectures = (lecturesData[selectedCourse] || [])
     .slice()
-    .sort((a, b) => new Date(a.lecture_date) - new Date(b.lecture_date));
+    .sort((a, b) => parseLectureDate(a.lecture_date) - parseLectureDate(b.lecture_date));
 
   /** Convert an external leccap URL to the proxied local path */
   const toProxyUrl = (url) => url.replace(LECCAP_ORIGIN, LECCAP_PROXY);
@@ -431,7 +437,7 @@ const CourseTutorMVP = () => {
                   Lecture {lectureIndex + 1} of {sortedLectures.length}
                   {sortedLectures[lectureIndex] && (
                     <span className={`ml-2 text-xs ${dark ? "text-slate-400" : "text-gray-500"}`}>
-                      ({new Date(sortedLectures[lectureIndex].lecture_date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })})
+                      ({parseLectureDate(sortedLectures[lectureIndex].lecture_date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })})
                     </span>
                   )}
                 </span>
@@ -467,7 +473,7 @@ const CourseTutorMVP = () => {
                 >
                   {sortedLectures.map((l, i) => (
                     <option key={l.recording_id} value={i}>
-                      {new Date(l.lecture_date).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                      {parseLectureDate(l.lecture_date).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
                     </option>
                   ))}
                 </select>
@@ -659,7 +665,8 @@ const CourseTutorMVP = () => {
                 {lecturesData[selectedCourse]?.length > 0 ? (
                   <div className="divide-y">
                     {lecturesData[selectedCourse]
-                      .sort((a, b) => new Date(b.lecture_date) - new Date(a.lecture_date))
+                      .slice()
+                      .sort((a, b) => parseLectureDate(b.lecture_date) - parseLectureDate(a.lecture_date))
                       .map((lecture, idx) => (
                         <button
                           key={idx}
@@ -672,7 +679,7 @@ const CourseTutorMVP = () => {
                           } disabled:opacity-50 disabled:cursor-not-allowed`}
                         >
                           <div className={`text-sm font-medium ${dark ? "text-white" : "text-gray-900"}`}>
-                            {new Date(lecture.lecture_date).toLocaleDateString("en-US", {
+                            {parseLectureDate(lecture.lecture_date).toLocaleDateString("en-US", {
                               month: "short",
                               day: "numeric",
                               year: "numeric",
