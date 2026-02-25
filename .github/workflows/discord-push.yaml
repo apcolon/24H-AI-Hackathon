@@ -112,7 +112,10 @@ jobs:
           dreq = urllib.request.Request(
               webhook,
               data=json.dumps({"content": message}).encode("utf-8"),
-              headers={"Content-Type": "application/json"},
+              headers={
+                  "Content-Type": "application/json",
+                  "User-Agent": "GitHub-Actions-Bot/1.0",
+              },
           )
 
           try:
