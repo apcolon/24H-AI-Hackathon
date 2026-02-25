@@ -38,6 +38,13 @@ jobs:
           webhook = os.environ["DISCORD_WEBHOOK_URL"]
           api_key = os.environ["OPENAI_API_KEY"]
 
+          # Debug: confirm secrets are populated (prints length only, not the value)
+          print(f"OPENAI_API_KEY length: {len(api_key)}")
+          print(f"DISCORD_WEBHOOK_URL length: {len(webhook)}")
+          if not api_key:
+              print("ERROR: OPENAI_API_KEY is empty. Check GitHub repo Settings > Secrets > Repository secrets.")
+              raise SystemExit(1)
+
           diff_path = "/tmp/diff.txt"
           diff = open(diff_path).read() if os.path.exists(diff_path) else ""
           repo = os.environ.get('REPO', '')
